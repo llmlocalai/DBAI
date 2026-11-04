@@ -1,0 +1,63 @@
+/* Shared site chrome: top nav bar, sidebar hide/unhide, wider desktop layout.
+   Loaded after each page's own inline styles, so these rules win the cascade. */
+
+:root{ --topbar-h: 50px; }
+
+body{ padding-top: var(--topbar-h); }
+
+.ccar-topbar{
+  position:fixed; top:0; left:0; right:0; height:var(--topbar-h);
+  background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+  padding:0 max(14px, env(safe-area-inset-left,0px)) 0 max(14px, env(safe-area-inset-left,0px));
+  padding-right:max(14px, env(safe-area-inset-right,0px));
+  z-index:9000;
+  font-family:'Inter','Noto Sans SC',system-ui,-apple-system,sans-serif;
+}
+.ccar-topbar .ccar-burger,
+.ccar-topbar .ccar-theme-toggle{
+  background:none; border:1px solid var(--border); border-radius:8px;
+  width:32px; height:32px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--fg); font-size:15px; line-height:1;
+}
+.ccar-topbar .ccar-theme-toggle{ border-radius:999px; }
+.ccar-topbar .ccar-burger:hover,
+.ccar-topbar .ccar-theme-toggle:hover{ background:var(--surface-2); }
+.ccar-topbar .ccar-brand{
+  font-weight:700; font-size:13.5px; color:var(--fg); white-space:nowrap;
+  font-family:'Source Serif 4','Noto Serif SC',Georgia,serif;
+}
+.ccar-topbar nav{ display:flex; gap:3px; overflow-x:auto; flex:1; scrollbar-width:none; }
+.ccar-topbar nav::-webkit-scrollbar{ display:none; }
+.ccar-topbar nav a{
+  color:var(--muted); text-decoration:none; font-size:12.5px;
+  padding:7px 10px; border-radius:6px; white-space:nowrap;
+}
+.ccar-topbar nav a:hover{ background:var(--surface-2); color:var(--fg); }
+.ccar-topbar nav a.ccar-current{ background:var(--accent-soft); color:var(--accent-strong); font-weight:600; }
+
+@media (max-width:640px){
+  .ccar-topbar .ccar-brand{ display:none; }
+  .ccar-topbar nav a{ font-size:11px; padding:6px 7px; }
+}
+
+/* Actively use right-side space on wide desktop viewports */
+@media (min-width:1000px){
+  .shell{ max-width:min(1680px, 96vw) !important; }
+}
+@media (min-width:1500px){
+  .shell{ grid-template-columns:260px minmax(0,1fr) !important; }
+}
+
+/* Keep the sticky sidebar clear of the fixed top bar */
+@media (min-width:861px){
+  nav.rail{
+    top: var(--topbar-h) !important;
+    max-height: calc(100vh - var(--topbar-h)) !important;
+  }
+}
+
+/* Left sidebar hide/unhide */
+body.ccar-nav-hidden nav.rail{ display:none !important; }
+body.ccar-nav-hidden .shell{ grid-template-columns:1fr !important; }
