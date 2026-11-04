@@ -4,7 +4,7 @@ Static course site (overview + 4 day-part pages) with an embedded AI tutor
 backed by a retrieval-augmented serverless API.
 
 ## Structure
-- `00-overview.html` — main/landing page (served at `/`)
+- `index.html` (renamed from `00-overview.html`) — main/landing page (served at `/`)
 - `01-day1-part1.html`, `02-day1-part2.html`, `03-day2-part1.html`, `04-day2-part2.html` — course day pages
 - `tutor-widget.js` — floating chat widget injected into every page
 - `api/chat.js` — tutor API: retrieves relevant course chunks, then tries a
