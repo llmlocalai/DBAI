@@ -1,0 +1,11 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/00-overview.html" },
+    { "source": "/overview", "destination": "/00-overview.html" },
+    { "source": "/day1-part1", "destination": "/01-day1-part1.html" },
+    { "source": "/day1-part2", "destination": "/02-day1-part2.html" },
+    { "source": "/day2-part1", "destination": "/03-day2-part1.html" },
+    { "source": "/day2-part2", "destination": "/04-day2-part2.html" }
+  ]
+}

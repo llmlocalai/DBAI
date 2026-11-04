@@ -1,0 +1,5 @@
+.DS_Store
+node_modules/
+DBNov2026/
+_tmp_clean/
+.vercel

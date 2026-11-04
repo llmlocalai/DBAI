@@ -1,0 +1,414 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>CCAR-P × Databricks — Course Overview</title>
+<style>
+  :root{
+    --bg:#f7f4ee; --surface:#ffffff; --surface-2:#f0ebe0;
+    --fg:#211f1a; --muted:#6b6557; --border:#e0dbcc;
+    --accent:#2d5d6b; --accent-soft:#dfeaec; --accent-strong:#163b47;
+    --warn:#8a5a2b; --warn-soft:#f3e6d4;
+    --code-bg:#efe9da;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17191b; --surface:#1f2225; --surface-2:#262a2e;
+      --fg:#eae6dc; --muted:#9a9488; --border:#33373b;
+      --accent:#7fb8c4; --accent-soft:#223338; --accent-strong:#bfe3ea;
+      --warn:#d9a564; --warn-soft:#332a1c;
+      --code-bg:#262a2e;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17191b; --surface:#1f2225; --surface-2:#262a2e;
+    --fg:#eae6dc; --muted:#9a9488; --border:#33373b;
+    --accent:#7fb8c4; --accent-soft:#223338; --accent-strong:#bfe3ea;
+    --warn:#d9a564; --warn-soft:#332a1c;
+    --code-bg:#262a2e;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--fg); font-family:'Inter','Noto Sans SC',system-ui,-apple-system,sans-serif; font-size:16px; line-height:1.6;}
+  h1,h2,h3,h4{font-family:'Source Serif 4','Noto Serif SC',Georgia,serif; text-wrap:balance; font-weight:600}
+  code,.term,.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+
+  .shell{display:grid; grid-template-columns:240px minmax(0,1fr); max-width:1180px; margin:0 auto;
+    padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px));}
+  @media (max-width:860px){ .shell{grid-template-columns:1fr} }
+
+  nav.rail{position:sticky; top:env(safe-area-inset-top,0px); align-self:start; padding:28px 16px 28px 0; max-height:100vh; overflow-y:auto;}
+  @media (max-width:860px){ nav.rail{position:static; max-height:none; padding:20px 0 0 0; border-bottom:1px solid var(--border); margin-bottom:8px} }
+  nav.rail .brand{font-family:'Source Serif 4','Noto Serif SC',serif; font-size:19px; font-weight:700; margin-bottom:2px}
+  nav.rail .brand small{display:block; font-family:'Inter','Noto Sans SC',sans-serif; font-size:12px; font-weight:400; color:var(--muted); margin-top:2px}
+  nav.rail ul{list-style:none; margin:20px 0 0; padding:0; display:flex; flex-direction:column; gap:3px}
+  nav.rail a{display:block; color:var(--muted); text-decoration:none; font-size:13.5px; padding:6px 10px; border-radius:7px; border-left:2px solid transparent;}
+  nav.rail a.lvl2{padding-left:22px; font-size:13px}
+  nav.rail a:hover{background:var(--surface-2); color:var(--fg)}
+  nav.rail .status{margin-top:22px; padding:10px 12px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--muted)}
+
+  main{min-width:0; padding:28px 0 100px}
+  header.masthead{padding:4px 0 26px; border-bottom:1px solid var(--border); margin-bottom:34px}
+  header.masthead h1{font-size:30px; margin:0 0 8px}
+  header.masthead .byline{font-size:13.5px; color:var(--muted)}
+  header.masthead .lede{margin-top:16px; font-size:16px; max-width:640px}
+  header.masthead .lede.cn{color:var(--muted); font-size:15px; margin-top:8px}
+
+  section.block{margin-bottom:52px; scroll-margin-top:24px}
+  section.block > h2{font-size:23px; display:flex; align-items:baseline; gap:10px; margin-bottom:4px}
+  section.block > h2 .num{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--accent); font-weight:500}
+  section.block > .tag{color:var(--muted); font-size:13px; margin-bottom:22px}
+
+  h3.sub{font-size:17px; margin:28px 0 10px}
+  h3.sub .num{color:var(--muted); font-weight:400; margin-right:6px}
+
+  p{margin:0 0 12px; max-width:68ch}
+  p.cn{color:var(--muted); font-size:14.5px; max-width:68ch}
+  p.cn::before{content:"中文 "; font-size:11px; letter-spacing:.04em; color:var(--muted); opacity:.75}
+  .pair{margin-bottom:18px}
+
+  .callout{background:var(--accent-soft); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin:16px 0; max-width:68ch;}
+  .callout .label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-strong); font-weight:600; margin-bottom:6px}
+  .callout p:last-child{margin-bottom:0}
+  .callout.work{background:var(--warn-soft); border-color:var(--border)}
+  .callout.work .label{color:var(--warn)}
+
+  table{border-collapse:collapse; width:100%; margin:14px 0 20px; font-size:14px}
+  caption{text-align:left; font-size:12px; color:var(--muted); margin-bottom:6px}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top}
+  th{font-size:11.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); font-weight:600}
+  td.term{font-weight:600; white-space:nowrap}
+  .tablewrap{overflow-x:auto; margin:14px 0 20px}
+
+  figure.diagram{margin:18px 0 24px; max-width:720px}
+  figure.diagram svg{width:100%; height:auto; display:block; color:var(--fg)}
+  figure.diagram figcaption{color:var(--muted); font-size:12.5px; margin-top:8px; max-width:68ch}
+  .dg-box{fill:var(--surface); stroke:var(--border)}
+  .dg-box-hi{fill:var(--accent-soft); stroke:var(--accent)}
+  .dg-box-warn{fill:var(--warn-soft); stroke:var(--warn)}
+  .dg-line{stroke:var(--muted); fill:none}
+  .dg-line-hi{stroke:var(--accent); fill:none}
+  .dg-txt{fill:var(--fg); font-family:'Inter','Noto Sans SC',sans-serif}
+  .dg-txt-mono{fill:var(--fg); font-family:'IBM Plex Mono',monospace}
+  .dg-txt-muted{fill:var(--muted); font-family:'Inter','Noto Sans SC',sans-serif}
+  .dg-label{fill:var(--muted); font-family:'Inter','Noto Sans SC',sans-serif}
+
+  .crosswalk{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0 24px;}
+  @media (max-width:640px){.crosswalk{grid-template-columns:1fr}}
+  .crosswalk .side{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px}
+  .crosswalk .side h4{margin:0 0 8px; font-size:13px; letter-spacing:.03em; text-transform:uppercase; color:var(--muted)}
+  .crosswalk .side ul{margin:0; padding-left:18px; font-size:13.5px}
+  .crosswalk .side li{margin-bottom:5px}
+
+  /* Part cards — new for the overview */
+  .partgrid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0 28px;}
+  @media (max-width:760px){.partgrid{grid-template-columns:1fr}}
+  .partcard{display:block; text-decoration:none; color:var(--fg); background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:20px 20px 18px; position:relative; transition:border-color .15s, transform .15s;}
+  .partcard:hover{border-color:var(--accent); transform:translateY(-1px)}
+  .partcard .pnum{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.05em;
+    color:var(--accent-strong); background:var(--accent-soft); border-radius:6px; padding:3px 9px; margin-bottom:10px;}
+  .partcard h3{font-size:18px; margin:0 0 4px}
+  .partcard .folder{font-size:12.5px; color:var(--muted); margin-bottom:10px}
+  .partcard p{font-size:13.5px; margin-bottom:0; max-width:none}
+  .partcard .files{margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted)}
+  .partcard .go{position:absolute; top:20px; right:20px; color:var(--muted); font-size:13px}
+
+  .legend-row{display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 24px}
+  .legend-chip{display:flex; align-items:center; gap:7px; font-size:12.5px; border:1px solid var(--border); border-radius:20px; padding:5px 12px; background:var(--surface)}
+  .legend-chip .dot{width:9px; height:9px; border-radius:50%; flex:none}
+  .legend-chip .dot.blue{background:var(--accent)}
+  .legend-chip .dot.brown{background:var(--warn)}
+
+  .download-row{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:14px 0 24px}
+  @media (max-width:860px){.download-row{grid-template-columns:1fr 1fr}}
+  @media (max-width:520px){.download-row{grid-template-columns:1fr}}
+  .dlcard{border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:var(--surface); font-size:12.5px}
+  .dlcard .fname{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12px; margin-bottom:4px; word-break:break-all}
+  .dlcard .fdesc{color:var(--muted)}
+
+  footer.meta{border-top:1px solid var(--border); padding-top:16px; margin-top:60px; font-size:12px; color:var(--muted)}
+</style>
+
+<div class="shell">
+  <nav class="rail">
+    <div class="brand">CCAR-P × Databricks<small>Course Overview — navigation hub / 课程总览 · 导航中心</small></div>
+    <ul>
+      <li><a href="#welcome" class="navlink">Welcome &amp; How to Use This</a></li>
+      <li><a href="#lego" class="navlink">The Lego-Style Build</a></li>
+      <li><a href="#navrules" class="navlink">Navigation Rules</a></li>
+      <li><a href="#map" class="navlink">Course Map — the 4 Parts</a></li>
+      <li><a href="#paths" class="navlink">Suggested Reading Paths</a></li>
+      <li><a href="#ccarp-coverage" class="navlink">CCAR-P Coverage Across the Course</a></li>
+      <li><a href="#cheatsheet" class="navlink">Grand Cheat Sheet</a></li>
+      <li><a href="#downloads" class="navlink">Download All 5 Files</a></li>
+    </ul>
+    <div class="status">This page is the hub. It does not repeat the four parts' content — it tells you how they fit together and how to move between them.<br><br>这一页是整个课程的枢纽。它不重复四个部分的内容——它告诉你这四部分怎么拼在一起、该怎么在它们之间移动。</div>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <h1>CCAR-P and Databricks GenAI Study Notebook — Course Overview</h1>
+      <div class="byline">Peter Shang · Nov 4, 2026 · the hub page for a four-part bilingual study notebook covering the full Databricks GenAI training (Nov 3-4, 2026)</div>
+      <p class="lede">This course was built as four separate Artifact pages, in the order you took the course, because one page that size would be too slow to load and too long to navigate. This overview is the fifth page: a map, not more material. It explains how the four parts build on each other like stacked blocks, gives you the navigation conventions used identically across all four, and gets you to the right page for whatever you need right now — studying for CCAR-P, building FM Insight, or looking something up.</p>
+      <p class="lede cn">这门课是做成四个独立的 Artifact 页面的，按你上课的顺序排列，因为一个那么大的单页会加载很慢、导航起来也很累。这一页总览是第五页：它是一张地图，不是更多的课程内容。它会讲清楚这四个部分是怎么像搭积木一样一层层叠上去的，讲清楚四个部分里统一用的那套导航约定，然后把你带到你现在真正需要的那一页——备考 CCAR-P、搭建 FM Insight，还是查一个具体的东西。</p>
+    </header>
+
+    <section class="block" id="welcome">
+      <h2><span class="num">·</span> Welcome, and How This Notebook Came Together</h2>
+      <div class="pair">
+        <p>Across two days (Nov 3-4, 2026) you went through a Databricks GenAI course with four folders: <strong>Building RAG Agents with Agent Bricks</strong>, <strong>Building Agentic Applications on Databricks</strong>, <strong>Agent Evaluation on Databricks</strong>, and <strong>Deploy and Monitor</strong>. Each folder became its own notebook section as you finished it, with every file translated into a bilingual EN/CN write-up: the big picture first, then the mechanics, then a CCAR-P exam crosswalk, then an explicit tie-back to your actual work on FM Insight at OUSD(C). 36 course files plus appendices, four folders, zero skipped — this overview is what ties all of it into one coherent course rather than four separate documents.</p>
+        <p class="cn">在两天里（2026 年 11 月 3-4 日），你上了一门 Databricks GenAI 课程，一共四个文件夹：<strong>Building RAG Agents with Agent Bricks</strong>、<strong>Building Agentic Applications on Databricks</strong>、<strong>Agent Evaluation on Databricks</strong>、<strong>Deploy and Monitor</strong>。每上完一个文件夹，就变成了笔记里的一个独立部分，每个文件都被翻译成双语（中英文）的讲解：先讲大图景，再讲具体机制，再做一次 CCAR-P 考试对照，最后明确地跟你在 OUSD(C) 做的 FM Insight 实际工作连起来。36 个课程文件加上附录，四个文件夹，一个都没跳过——这一页总览，就是把这一切串成一门完整的课程，而不是四份互相独立的文档。</p>
+      </div>
+      <div class="callout">
+        <div class="label">What this overview is NOT</div>
+        <p>It does not repeat Big Picture, CCAR-P domain weights, Databricks Platform Structure, or Key Terminology — those live permanently in Day 1 Part 1 and should stay read only there, to avoid four slightly-drifting copies. This page links to them instead.</p>
+      </div>
+    </section>
+
+    <section class="block" id="lego">
+      <h2><span class="num">·</span> The Lego-Style Build — Why the Order Matters</h2>
+      <div class="pair">
+        <p>The four folders are not four independent topics you could take in any order. Each one is a layer that only makes sense once the layer under it is in place — the same way a Lego model is built bottom-up, not by snapping on whichever brick looks interesting. Skip a layer and the next one has nothing to click into: Folder 3's evaluation material assumes an agent and tools already exist to evaluate (Folders 1-2); Folder 4's deployment and monitoring material assumes you already know what "good" looks like for that agent (Folder 3).</p>
+        <p class="cn">这四个文件夹不是四个可以随便挑顺序来学的独立主题。每一层都只有在它下面那一层已经搭好之后才讲得通——就跟搭乐高一样，是从底往上搭的，不是看哪块积木好看就先拿哪块。跳过一层，下一层就没有东西可以卡上去：Folder 3 的评测内容,是建立在"已经有一个 agent 和一些工具可以拿来评测"这个前提上的（也就是 Folder 1-2 搭出来的东西）；Folder 4 的部署和监控内容,是建立在"你已经知道这个 agent 的'好'应该是什么样子"这个前提上的（也就是 Folder 3 教的东西）。</p>
+      </div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 640 400" role="img" aria-label="Four stacked Lego-style blocks from bottom to top: Folder 1 Retrieval and Knowledge, the foundation block an agent needs something to know; Folder 2 Tools and Orchestration, snapping on top, an agent needs something to do and a way to coordinate; Folder 3 Evaluation, snapping on top of that, you need to know whether any of it is any good; Folder 4 Deploy and Monitor, the top block, now make it survive contact with real users. Each block is wider at the connector studs showing where the next layer clicks in.">
+          <defs>
+            <marker id="arrOV1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+
+          <!-- Block 4 (top) -->
+          <rect x="120" y="14" width="400" height="80" rx="10" class="dg-box-hi"/>
+          <circle cx="160" cy="14" r="5" class="dg-box-hi"/><circle cx="220" cy="14" r="5" class="dg-box-hi"/>
+          <circle cx="480" cy="14" r="5" class="dg-box-hi"/><circle cx="420" cy="14" r="5" class="dg-box-hi"/>
+          <text x="320" y="42" text-anchor="middle" class="dg-txt" font-size="13.5" font-weight="700">FOLDER 4 — Deploy and Monitor</text>
+          <text x="320" y="62" text-anchor="middle" class="dg-txt-muted" font-size="11">Files 29-36 · Day 2 Part 2</text>
+          <text x="320" y="80" text-anchor="middle" class="dg-txt-muted" font-size="10.5" font-style="italic">make it survive contact with real users</text>
+
+          <!-- Block 3 -->
+          <rect x="60" y="106" width="520" height="80" rx="10" class="dg-box"/>
+          <circle cx="110" cy="106" r="5" class="dg-box"/><circle cx="170" cy="106" r="5" class="dg-box"/>
+          <circle cx="530" cy="106" r="5" class="dg-box"/><circle cx="470" cy="106" r="5" class="dg-box"/>
+          <text x="320" y="134" text-anchor="middle" class="dg-txt" font-size="13.5" font-weight="700">FOLDER 3 — Agent Evaluation on Databricks</text>
+          <text x="320" y="154" text-anchor="middle" class="dg-txt-muted" font-size="11">Files 17-28 · Day 2 Part 1</text>
+          <text x="320" y="172" text-anchor="middle" class="dg-txt-muted" font-size="10.5" font-style="italic">know whether any of it is actually any good</text>
+
+          <!-- Block 2 -->
+          <rect x="30" y="198" width="580" height="80" rx="10" class="dg-box"/>
+          <circle cx="80" cy="198" r="5" class="dg-box"/><circle cx="140" cy="198" r="5" class="dg-box"/>
+          <circle cx="560" cy="198" r="5" class="dg-box"/><circle cx="500" cy="198" r="5" class="dg-box"/>
+          <text x="320" y="226" text-anchor="middle" class="dg-txt" font-size="13.5" font-weight="700">FOLDER 2 — Building Agentic Applications on Databricks</text>
+          <text x="320" y="246" text-anchor="middle" class="dg-txt-muted" font-size="11">Files 9-16 · Day 1 Part 2</text>
+          <text x="320" y="264" text-anchor="middle" class="dg-txt-muted" font-size="10.5" font-style="italic">give the agent something to do, and ways to coordinate</text>
+
+          <!-- Block 1 (foundation) -->
+          <rect x="10" y="290" width="620" height="80" rx="10" class="dg-box-warn"/>
+          <text x="320" y="320" text-anchor="middle" class="dg-txt" font-size="13.5" font-weight="700">FOLDER 1 — Building RAG Agents with Agent Bricks</text>
+          <text x="320" y="340" text-anchor="middle" class="dg-txt-muted" font-size="11">Files 1-8 · Day 1 Part 1</text>
+          <text x="320" y="358" text-anchor="middle" class="dg-txt-muted" font-size="10.5" font-style="italic">the foundation: give the agent something to know</text>
+
+          <text x="320" y="392" text-anchor="middle" class="dg-label" font-size="11" font-style="italic">bottom-up, like Lego — each layer clicks into the one below it, never built out of order</text>
+        </svg>
+        <figcaption>The whole course as four stacked blocks. Retrieval (know) → Tools and orchestration (do) → Evaluation (judge) → Deploy and monitor (survive production). This is also the chronological order you took the course in, and the order the four artifact parts were written in.</figcaption>
+      </figure>
+
+      <div class="tablewrap">
+        <table>
+          <caption>What each layer adds, and why it needs the layer below it</caption>
+          <thead><tr><th>Layer</th><th>What it adds</th><th>Why it needs the layer below</th></tr></thead>
+          <tbody>
+            <tr><td class="term">1. Retrieval</td><td>An agent that can find and ground answers in real documents/data (AI Search, Lakebase, Genie)</td><td>Foundation — nothing above this exists without something to retrieve from</td></tr>
+            <tr><td class="term">2. Tools &amp; Orchestration</td><td>An agent that can act (UC functions, MCP tools) and coordinate (single/multi-agent, 3 frameworks)</td><td>Needs Layer 1's retrieval patterns as the first tools worth building</td></tr>
+            <tr><td class="term">3. Evaluation</td><td>A vocabulary and toolset for judging whether the agent from Layers 1-2 is actually good</td><td>Nothing to evaluate without an agent and tools that already exist and run</td></tr>
+            <tr><td class="term">4. Deploy &amp; Monitor</td><td>Shipping that agent live, and running Layer 3's evaluation continuously on real traffic</td><td>Can't define "monitor for quality" without Layer 3's scorers and judges already defined</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block" id="navrules">
+      <h2><span class="num">·</span> Navigation Rules — the Same Conventions in All Four Parts</h2>
+      <div class="pair">
+        <p>Every part uses an identical design system and the same handful of visual conventions, so once you've learned to read one page you can read all four without relearning anything. Here is the legend.</p>
+        <p class="cn">四个部分用的是完全一样的设计系统,和同一套视觉约定,所以只要学会看懂一页，剩下三页不用重新学就能看懂。下面是图例说明。</p>
+      </div>
+      <div class="legend-row">
+        <div class="legend-chip"><span class="dot blue"></span> Blue-tinted box / callout = core concept or the normal case</div>
+        <div class="legend-chip"><span class="dot brown"></span> Brown-tinted box / callout = warning, gotcha, or an Advana/FM link</div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>Reading conventions used identically across all four parts</caption>
+          <thead><tr><th>You'll see</th><th>What it means</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Plain paragraph, then a grey "中文" paragraph</td><td>Every explanation is given twice — English then Chinese — covering the same ground, never a translation shortcut or a summary</td></tr>
+            <tr><td class="term">Blue box labeled a plain note</td><td>A core concept, a definition, or something worth pausing on — the "normal case" callout</td></tr>
+            <tr><td class="term">Brown box labeled "Advana / FM link"</td><td>An explicit, concrete tie-back to your actual work: FM Insight, GFEBS/Navy ERP, audit remediation, DODIG findings — never generic "this could help your job" filler</td></tr>
+            <tr><td class="term">Two-column box labeled "CCAR-P crosswalk"</td><td>Maps the file's content onto specific CCAR-P exam domains (D1-D7), flagging your named weak spots whenever the material genuinely bears on one</td></tr>
+            <tr><td class="term">Hand-drawn diagram with a caption</td><td>Either a real diagram from the course source redrawn as a theme-aware SVG, or an original one added where it helps — never decorative, always load-bearing</td></tr>
+            <tr><td class="term"><code>File NN</code> in a heading</td><td>Global file numbering across the whole course — continues across folders (Folder 2 starts at File 9, not File 1), so a file number alone tells you which folder it's in</td></tr>
+            <tr><td class="term">Left-hand navigation rail</td><td>Jumps within that one page only — to move between parts, use the course map below or each part's own back-link</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout work">
+        <div class="label">One real limitation to know about</div>
+        <p>These four pages are separate artifacts, not one scrolling document — each has its own URL and its own left-hand nav rail that only jumps within itself. There is no single "next" button that walks you from Part 1 straight through to Part 2; use this overview's course map, or the back-link at the top of each part's own nav rail, to move between them.</p>
+      </div>
+    </section>
+
+    <section class="block" id="map">
+      <h2><span class="num">·</span> Course Map — the Four Parts</h2>
+      <div class="pair">
+        <p>Click any card to open that part. They are numbered in build order, which is also the order you took the course.</p>
+        <p class="cn">点击任意一张卡片即可打开对应部分。编号顺序就是搭建顺序，也就是你上课的顺序。</p>
+      </div>
+      <div class="partgrid">
+        <a class="partcard" href="https://claude.ai/artifact/Goyragw6RjSBaXFWDXjHtM" target="_blank" rel="noopener">
+          <span class="go">open &#8599;</span>
+          <span class="pnum">PART 1 of 4</span>
+          <h3>Day 1, Part 1</h3>
+          <div class="folder">Folder 1 — Building RAG Agents with Agent Bricks</div>
+          <p>Big Picture, CCAR-P domain weights, Databricks Platform Structure, Key Terminology (all living here only), plus Files 1-8: retrieval, document parsing/chunking, AI Search vs. Lakebase Search, distance-metric mechanics. Closes with a Folder-1 production decision map.</p>
+          <div class="files">Files 1-8 · 8 diagrams</div>
+        </a>
+        <a class="partcard" href="https://claude.ai/artifact/MGHtXqemg9Za8vgux7HRmK" target="_blank" rel="noopener">
+          <span class="go">open &#8599;</span>
+          <span class="pnum">PART 2 of 4</span>
+          <h3>Day 1, Part 2</h3>
+          <div class="folder">Folder 2 — Building Agentic Applications on Databricks</div>
+          <p>Files 9-16: single/multi-agent architecture, building and fixing UC tools (the $9,798 vs $88,147 bug), MCP, and the same supervisor-worker agent built three ways — OpenAI Agents SDK, LangChain, DSPy — to prove governance lives under the framework, not inside it.</p>
+          <div class="files">Files 9-16 · 21 diagrams</div>
+        </a>
+        <a class="partcard" href="https://claude.ai/artifact/033e2675-1b01-4f5b-ab14-3265ca0bbec1" target="_blank" rel="noopener">
+          <span class="go">open &#8599;</span>
+          <span class="pnum">PART 3 of 4</span>
+          <h3>Day 2, Part 1</h3>
+          <div class="folder">Folder 3 — Agent Evaluation on Databricks</div>
+          <p>Files 17-28: offline evaluation datasets, LLM judges and custom scorers, human feedback review apps, A/B testing and prompt optimization — the vocabulary for judging whether an agent is actually good, built before it ever reaches real traffic.</p>
+          <div class="files">Files 17-28 · 22 diagrams</div>
+        </a>
+        <a class="partcard" href="https://claude.ai/artifact/Xc8g4KQgF9WhQ5JNkdCQkn" target="_blank" rel="noopener">
+          <span class="go">open &#8599;</span>
+          <span class="pnum">PART 4 of 4</span>
+          <h3>Day 2, Part 2</h3>
+          <div class="folder">Folder 4 — Deploy and Monitor</div>
+          <p>Files 29-36: Databricks Apps and DABs, MCP and MLflow tracing in production, scorers running continuously on live traffic with sampling tiers, backfill, and the Agent Bricks CLI — what happens once the agent has to survive contact with real users.</p>
+          <div class="files">Files 29-36 · 6 diagrams</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="block" id="paths">
+      <h2><span class="num">·</span> Suggested Reading Paths — Depending on What You Need Right Now</h2>
+      <div class="pair">
+        <p>You will not always want to read all four parts front to back. Here are the three real reasons you'd come back to this notebook, and where to go for each.</p>
+        <p class="cn">你不会每次都想把四个部分从头看到尾。以下是你会回来翻这份笔记的三种真实场景，以及每种场景该去哪一页。</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>Three goals, three different paths through the same four parts</caption>
+          <thead><tr><th>Your goal right now</th><th>Where to start</th><th>What to actually read</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Cramming for CCAR-P</td><td>Day 1 Part 1, Section 2 (CCAR-P crosswalk + domain weights)</td><td>Skim every "CCAR-P crosswalk" box across all four parts — they are self-contained and skip straight to the exam-relevant judgment, skipping the surrounding mechanics</td></tr>
+            <tr><td class="term">Building a piece of FM Insight</td><td>Whichever Folder matches the capability you're building (see the Lego diagram above)</td><td>Read that Folder's "Advana / FM link" callouts in full — they're the concrete design decisions, not just motivation text</td></tr>
+            <tr><td class="term">Looking up one specific mechanic</td><td>Use each part's own left-hand nav rail — every file has its own anchor</td><td>Jump straight to the file number; global numbering means you always know which Part it's in before you click</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <div class="label">First time through</div>
+        <p>If this is your first pass and you have time, read the four parts in build order (1 → 2 → 3 → 4), same as the Lego diagram. Each part assumes you already know what the one before it covered.</p>
+      </div>
+    </section>
+
+    <section class="block" id="ccarp-coverage">
+      <h2><span class="num">·</span> CCAR-P Coverage Across the Course</h2>
+      <div class="pair">
+        <p>Full domain names and exam weights live permanently in Day 1 Part 1 — this is just the map of where each domain actually got exercised across the four parts, so you know where to go back to for a given weak spot.</p>
+        <p class="cn">完整的领域名称和考试权重永久保存在 Day 1 Part 1 里——这里只是一张地图，告诉你每个领域在四个部分里具体是在哪儿被讲到的，这样你要补哪个弱点,就知道该回去翻哪一页。</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>Which parts carry the heaviest crosswalk material for each CCAR-P domain</caption>
+          <thead><tr><th>Domain</th><th>Weight</th><th>Heaviest coverage</th><th>Named weak spot?</th></tr></thead>
+          <tbody>
+            <tr><td class="term">D1 — Solution Design &amp; Architecture</td><td>17%</td><td>Part 2 (single/multi-agent orchestration taxonomy, File 12/14), Part 4 (Apps vs. Model Serving)</td><td></td></tr>
+            <tr><td class="term">D2 — Models, Prompting &amp; Context</td><td>13%</td><td>Part 1 (chunking/embedding), Part 2 (DSPy signatures)</td><td></td></tr>
+            <tr><td class="term">D3 — Integration</td><td>19%</td><td>Part 2 (tool/MCP/framework choice), Part 4 (observability at scale, protocol choice)</td><td><strong>Yes</strong> — observability at scale; integration protocol choice</td></tr>
+            <tr><td class="term">D4 — Evaluation, Testing &amp; Optimization</td><td>16%</td><td>Part 3 (the whole folder), Part 4 (scorer types, sampling tiers)</td><td><strong>Yes</strong> — eval dataset/framework design; A/B testing</td></tr>
+            <tr><td class="term">D5 — Governance, Safety &amp; Risk</td><td>14%</td><td>Part 2 (UC/MCP governance), Part 4 (Unity Gateway, UC trace governance)</td><td><strong>Yes</strong> — LLM risk/failure modes</td></tr>
+            <tr><td class="term">D6 — Stakeholder Comm &amp; Lifecycle</td><td>14%</td><td>Part 3 (human feedback review apps), Part 4 (scorer lifecycle)</td><td></td></tr>
+            <tr><td class="term">D7 — Dev Productivity &amp; Ops Enablement</td><td>7%</td><td>Part 4 (Apps+DABs, Agent Bricks CLI)</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="crosswalk">
+        <div class="side">
+          <h4>If you only have time to shore up weak spots</h4>
+          <ul>
+            <li><strong>D3 Integration</strong> — Part 4, Files 31-32 (MCP protocol depth, trace metadata vs. span attributes, UC storage limits)</li>
+            <li><strong>D4 Evaluation</strong> — Part 3 in full, then Part 4 File 33 (sampling tiers, scorer types table)</li>
+            <li><strong>D5 Governance/Risk</strong> — Part 4 Files 29/31 (Unity Gateway, UC trace grants), Part 2 File 11 (the silent-wrong-answer failure mode)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="cheatsheet">
+      <h2><span class="num">·</span> Grand Cheat Sheet — One Table, All Four Folders</h2>
+      <div class="pair">
+        <p>Each part ends with its own folder-level cheat sheet. This is the condensed, one-row-per-folder version — for the full capability-by-capability detail, follow the link into the matching part.</p>
+        <p class="cn">每个部分结尾都有自己那个文件夹层级的 cheat sheet。这里是压缩版——每个文件夹一行。要看逐项能力的完整细节，点进对应的那个部分去看。</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>The whole course in one table: what you'd reach for, and which part has the detail</caption>
+          <thead><tr><th>You need to...</th><th>Reach for</th><th>Detail in</th></tr></thead>
+          <tbody>
+            <tr><td>Ground answers in real documents/data</td><td>AI Search, Lakebase Search, Genie</td><td>Part 1</td></tr>
+            <tr><td>Parse and chunk unstructured documents</td><td><code>ai_parse_document</code>, chunking strategies</td><td>Part 1</td></tr>
+            <tr><td>Give an agent something to act on</td><td>UC Functions (SQL/Python), MCP tools</td><td>Part 2</td></tr>
+            <tr><td>Coordinate more than one agent</td><td>Supervisor pattern, handoffs, MCP-scoped workers</td><td>Part 2</td></tr>
+            <tr><td>Pick an agent framework</td><td>OpenAI Agents SDK / LangChain / DSPy comparison</td><td>Part 2</td></tr>
+            <tr><td>Build an offline evaluation set</td><td>Eval datasets, LLM judges, custom scorers</td><td>Part 3</td></tr>
+            <tr><td>Get a human in the loop before shipping</td><td>Review Apps, human feedback labeling</td><td>Part 3</td></tr>
+            <tr><td>Compare two prompts/configs objectively</td><td>A/B testing, prompt optimization</td><td>Part 3</td></tr>
+            <tr><td>Ship an agent as a live service</td><td>Databricks Apps + DABs</td><td>Part 4</td></tr>
+            <tr><td>See what a deployed agent actually did</td><td>MLflow Tracing, UC-backed trace tables</td><td>Part 4</td></tr>
+            <tr><td>Score live production traffic continuously</td><td>Online evaluation, sampling tiers, scorer lifecycle</td><td>Part 4</td></tr>
+            <tr><td>Rescore traces that predate a new judge</td><td><code>backfill_scorers()</code></td><td>Part 4</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block" id="downloads">
+      <h2><span class="num">·</span> Download All 5 Files</h2>
+      <div class="pair">
+        <p>All five pages — this overview plus the four parts — are being sent to you as standalone HTML files alongside this reply, so you can save, archive, or open any of them offline with no internet connection and no Claude account needed. Opening a saved file in a browser renders it exactly as it appears here, styling and diagrams included.</p>
+        <p class="cn">这五个页面——这份总览加上四个部分——会跟这条回复一起，作为独立的 HTML 文件发给你，这样你就可以离线保存、存档，或者在没有网络、不需要 Claude 账号的情况下打开任何一个。在浏览器里打开保存下来的文件，渲染出来的效果跟这里看到的完全一样，样式和图表都在。</p>
+      </div>
+      <div class="download-row">
+        <div class="dlcard"><div class="fname">00-overview.html</div><div class="fdesc">This hub page</div></div>
+        <div class="dlcard"><div class="fname">01-day1-part1.html</div><div class="fdesc">Folder 1, Files 1-8</div></div>
+        <div class="dlcard"><div class="fname">02-day1-part2.html</div><div class="fdesc">Folder 2, Files 9-16</div></div>
+        <div class="dlcard"><div class="fname">03-day2-part1.html</div><div class="fdesc">Folder 3, Files 17-28</div></div>
+        <div class="dlcard"><div class="fname">04-day2-part2.html</div><div class="fdesc">Folder 4, Files 29-36</div></div>
+      </div>
+      <div class="callout work">
+        <div class="label">Keeping them in sync</div>
+        <p>These are point-in-time snapshots. If a part gets updated later (a new file added, a correction made), re-download it from its artifact link rather than from an old saved copy — the saved HTML file does not update itself.</p>
+      </div>
+    </section>
+
+    <footer class="meta">Course Overview — the fifth page, covering navigation across all four parts of the CCAR-P × Databricks GenAI study notebook. Folders 1-4 (36 files plus appendices) are complete across Day 1 Part 1, Day 1 Part 2, Day 2 Part 1, and Day 2 Part 2.<br>课程总览——第五页，覆盖整个 CCAR-P × Databricks GenAI 学习笔记四个部分之间的导航。Folder 1-4（36 个文件加附录）已经在 Day 1 第一部分、Day 1 第二部分、Day 2 第一部分、Day 2 第二部分里全部完成。</footer>
+  </main>
+</div>
+
+<script src="/tutor-widget.js" defer></script>
+</body></html>

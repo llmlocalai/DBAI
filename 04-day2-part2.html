@@ -1,0 +1,1032 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>CCAR-P × Databricks — Day 2 Part 2</title>
+<style>
+  /* Layout concept: same left rail + single scrolling column as Parts 1-3, carried over verbatim. */
+  :root{
+    --bg:#f7f4ee; --surface:#ffffff; --surface-2:#f0ebe0;
+    --fg:#211f1a; --muted:#6b6557; --border:#e0dbcc;
+    --accent:#2d5d6b; --accent-soft:#dfeaec; --accent-strong:#163b47;
+    --warn:#8a5a2b; --warn-soft:#f3e6d4;
+    --code-bg:#efe9da;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17191b; --surface:#1f2225; --surface-2:#262a2e;
+      --fg:#eae6dc; --muted:#9a9488; --border:#33373b;
+      --accent:#7fb8c4; --accent-soft:#223338; --accent-strong:#bfe3ea;
+      --warn:#d9a564; --warn-soft:#332a1c;
+      --code-bg:#262a2e;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17191b; --surface:#1f2225; --surface-2:#262a2e;
+    --fg:#eae6dc; --muted:#9a9488; --border:#33373b;
+    --accent:#7fb8c4; --accent-soft:#223338; --accent-strong:#bfe3ea;
+    --warn:#d9a564; --warn-soft:#332a1c;
+    --code-bg:#262a2e;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:'Inter','Noto Sans SC',system-ui,-apple-system,sans-serif;
+    font-size:16px; line-height:1.6;
+  }
+  h1,h2,h3,h4{font-family:'Source Serif 4','Noto Serif SC',Georgia,serif; text-wrap:balance; font-weight:600}
+  code,.term,.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+
+  .shell{
+    display:grid; grid-template-columns:240px minmax(0,1fr);
+    max-width:1180px; margin:0 auto;
+    padding-left:max(16px, env(safe-area-inset-left,0px));
+    padding-right:max(16px, env(safe-area-inset-right,0px));
+  }
+  @media (max-width:860px){ .shell{grid-template-columns:1fr} }
+
+  nav.rail{
+    position:sticky; top:env(safe-area-inset-top,0px);
+    align-self:start; padding:28px 16px 28px 0;
+    max-height:100vh; overflow-y:auto;
+  }
+  @media (max-width:860px){
+    nav.rail{position:static; max-height:none; padding:20px 0 0 0; border-bottom:1px solid var(--border); margin-bottom:8px}
+  }
+  nav.rail .brand{font-family:'Source Serif 4','Noto Serif SC',serif; font-size:19px; font-weight:700; margin-bottom:2px}
+  nav.rail .brand small{display:block; font-family:'Inter','Noto Sans SC',sans-serif; font-size:12px; font-weight:400; color:var(--muted); margin-top:2px}
+  nav.rail ul{list-style:none; margin:20px 0 0; padding:0; display:flex; flex-direction:column; gap:3px}
+  nav.rail a{
+    display:block; color:var(--muted); text-decoration:none; font-size:13.5px;
+    padding:6px 10px; border-radius:7px; border-left:2px solid transparent;
+  }
+  nav.rail a.lvl2{padding-left:22px; font-size:13px}
+  nav.rail a.lvl3{padding-left:34px; font-size:12.5px}
+  nav.rail a:hover{background:var(--surface-2); color:var(--fg)}
+  nav.rail a.current{color:var(--accent-strong); border-left-color:var(--accent); background:var(--accent-soft); font-weight:600}
+  nav.rail .status{margin-top:22px; padding:10px 12px; background:var(--surface-2); border-radius:8px; font-size:12px; color:var(--muted)}
+  nav.rail .back{display:block; margin-bottom:14px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:12.5px; color:var(--accent-strong); text-decoration:none; background:var(--surface)}
+  nav.rail .back:hover{background:var(--accent-soft)}
+
+  main{min-width:0; padding:28px 0 100px}
+  header.masthead{padding:4px 0 26px; border-bottom:1px solid var(--border); margin-bottom:34px}
+  header.masthead h1{font-size:30px; margin:0 0 8px}
+  header.masthead .byline{font-size:13.5px; color:var(--muted)}
+  header.masthead .lede{margin-top:16px; font-size:16px; max-width:640px}
+  header.masthead .lede.cn{color:var(--muted); font-size:15px; margin-top:8px}
+
+  section.block{margin-bottom:52px; scroll-margin-top:24px}
+  section.block > h2{font-size:23px; display:flex; align-items:baseline; gap:10px; margin-bottom:4px}
+  section.block > h2 .num{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--accent); font-weight:500}
+  section.block > .tag{color:var(--muted); font-size:13px; margin-bottom:22px}
+
+  h3.sub{font-size:17px; margin:28px 0 10px}
+  h3.sub .num{color:var(--muted); font-weight:400; margin-right:6px}
+  h4.sub3{font-size:14.5px; margin:20px 0 8px; color:var(--accent-strong)}
+  h4.sub3 .num{color:var(--muted); font-weight:400; margin-right:6px}
+
+  p{margin:0 0 12px; max-width:68ch}
+  p.cn{color:var(--muted); font-size:14.5px; max-width:68ch}
+  p.cn::before{content:"中文 "; font-size:11px; letter-spacing:.04em; color:var(--muted); opacity:.75}
+
+  .pair{margin-bottom:18px}
+
+  .callout{
+    background:var(--accent-soft); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin:16px 0; max-width:68ch;
+  }
+  .callout .label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-strong); font-weight:600; margin-bottom:6px}
+  .callout p:last-child{margin-bottom:0}
+
+  .callout.work{background:var(--warn-soft); border-color:var(--border)}
+  .callout.work .label{color:var(--warn)}
+
+  .codeblock{margin:14px 0 20px; max-width:100%}
+  .codeblock pre{
+    margin:0; padding:14px 16px; overflow-x:auto;
+    background:var(--code-bg); border:1px solid var(--border); border-radius:9px;
+  }
+  .codeblock code{font-size:12.8px; line-height:1.55; color:var(--fg); white-space:pre}
+
+  table{border-collapse:collapse; width:100%; margin:14px 0 20px; font-size:14px}
+  caption{text-align:left; font-size:12px; color:var(--muted); margin-bottom:6px}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top}
+  th{font-size:11.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); font-weight:600}
+  td.term{font-weight:600; white-space:nowrap}
+  .tablewrap{overflow-x:auto; margin:14px 0 20px}
+
+  .stack-diagram{
+    display:flex; flex-direction:column; gap:6px; margin:18px 0 22px; max-width:560px;
+  }
+  .stack-diagram .layer{
+    border:1px solid var(--border); border-radius:9px; padding:11px 14px;
+    background:var(--surface); display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+  }
+  .stack-diagram .layer .name{font-weight:600; font-size:14.5px}
+  .stack-diagram .layer .role{color:var(--muted); font-size:12.5px; text-align:right}
+  .stack-diagram .layer.gov{border-left:3px solid var(--accent)}
+  .stack-diagram .arrow{text-align:center; color:var(--muted); font-size:12px; margin:-2px 0}
+
+  figure.diagram{margin:18px 0 24px; max-width:680px}
+  figure.diagram svg{width:100%; height:auto; display:block; color:var(--fg)}
+  figure.diagram figcaption{color:var(--muted); font-size:12.5px; margin-top:8px; max-width:68ch}
+  .dg-box{fill:var(--surface); stroke:var(--border)}
+  .dg-box-hi{fill:var(--accent-soft); stroke:var(--accent)}
+  .dg-box-warn{fill:var(--warn-soft); stroke:var(--warn)}
+  .dg-line{stroke:var(--muted); fill:none}
+  .dg-line-hi{stroke:var(--accent); fill:none}
+  .dg-txt{fill:var(--fg); font-family:'Inter','Noto Sans SC',sans-serif}
+  .dg-txt-mono{fill:var(--fg); font-family:'IBM Plex Mono',monospace}
+  .dg-txt-muted{fill:var(--muted); font-family:'Inter','Noto Sans SC',sans-serif}
+  .dg-label{fill:var(--muted); font-family:'Inter','Noto Sans SC',sans-serif}
+
+  .crosswalk{
+    display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0 24px;
+  }
+  @media (max-width:640px){.crosswalk{grid-template-columns:1fr}}
+  .crosswalk .side{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px}
+  .crosswalk .side h4{margin:0 0 8px; font-size:13px; letter-spacing:.03em; text-transform:uppercase; color:var(--muted)}
+  .crosswalk .side ul{margin:0; padding-left:18px; font-size:13.5px}
+  .crosswalk .side li{margin-bottom:5px}
+
+  .pending{
+    border:1px dashed var(--border); border-radius:10px; padding:16px 18px; color:var(--muted);
+    font-size:13.5px; background:var(--surface-2);
+  }
+
+  footer.meta{border-top:1px solid var(--border); padding-top:16px; margin-top:60px; font-size:12px; color:var(--muted)}
+</style>
+
+<div class="shell">
+  <nav class="rail">
+    <a class="back" href="https://claude.ai/artifact/033e2675-1b01-4f5b-ab14-3265ca0bbec1" target="_blank" rel="noopener">&larr; Day 2, Part 1 (Folder 3, Files 17-28)</a>
+    <div class="brand">CCAR-P × Databricks<small>Day 2, Part 2 — Folder 4 complete / 第二天 · 第二部分（Folder 4 已完成）</small></div>
+    <ul>
+      <li><a href="#p4-note" class="navlink">Note on this part</a></li>
+      <li><a href="#agenda4" class="navlink">Folder 4 Agenda</a></li>
+      <li><a href="#day2-file29" class="navlink">File 29 · Lecture</a></li>
+      <li><a href="#f29-a" class="navlink lvl2">A. The Agent Lifecycle</a></li>
+      <li><a href="#f29-b" class="navlink lvl2">B. Deployment Architecture</a></li>
+      <li><a href="#day2-file30" class="navlink">File 30 · Demo</a></li>
+      <li><a href="#f30-c" class="navlink lvl2">C. Basic Agent</a></li>
+      <li><a href="#f30-d" class="navlink lvl2">D. Add Tracing</a></li>
+      <li><a href="#f30-e" class="navlink lvl2">E. Add MCP Tools</a></li>
+      <li><a href="#f30-f" class="navlink lvl2">F-G. Filter &amp; Clean Up</a></li>
+      <li><a href="#day2-file31" class="navlink">File 31 · Lecture</a></li>
+      <li><a href="#f31-a" class="navlink lvl2">A. Model Context Protocol</a></li>
+      <li><a href="#f31-b" class="navlink lvl2">B. MLflow Tracing Foundations</a></li>
+      <li><a href="#day2-file32" class="navlink">File 32 · Demo</a></li>
+      <li><a href="#f32-b" class="navlink lvl2">B. Manual Spans &amp; Span Types</a></li>
+      <li><a href="#f32-c" class="navlink lvl2">C. Production Context</a></li>
+      <li><a href="#f32-d" class="navlink lvl2">D. Multi-Turn Sessions</a></li>
+      <li><a href="#f32-e" class="navlink lvl2">E. Search &amp; SQL</a></li>
+      <li><a href="#day2-file33" class="navlink">File 33 · Lecture</a></li>
+      <li><a href="#f33-a" class="navlink lvl2">A. Scorer Types</a></li>
+      <li><a href="#f33-b" class="navlink lvl2">B. Multi-Turn Judges</a></li>
+      <li><a href="#f33-c" class="navlink lvl2">C. Online Evaluation</a></li>
+      <li><a href="#f33-d" class="navlink lvl2">D. Scorer Management</a></li>
+      <li><a href="#f33-e" class="navlink lvl2">E. Backfill &amp; UC Storage</a></li>
+      <li><a href="#day2-file34" class="navlink">File 34 · Lab</a></li>
+      <li><a href="#day2-file35" class="navlink">File 35 · Lab</a></li>
+      <li><a href="#day2-file36" class="navlink">File 36 · Appendix</a></li>
+      <li><a href="#day2-synthesis" class="navlink">Folder 4 Complete · Synthesis</a></li>
+    </ul>
+    <div class="status">Day 2, Part 2 complete — Folder 4 "Deploy and Monitor" fully covered (Files 29-36). The course's four-folder arc (Folders 1-4) is now closed end to end.<br><br>第二天 · 第二部分已完成——Folder 4"Deploy and Monitor"全部覆盖（File 29-36）。整门课的四个 Folder，现在从头到尾全部讲完了。</div>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <h1>CCAR-P and Databricks GenAI Study Notebook — Day 2, Part 2</h1>
+      <div class="byline">Peter Shang · Nov 4, 2026 · Part 1 covered Folder 3 (Agent Evaluation) in full; this page closes the course with Folder 4 (Deploy and Monitor)</div>
+      <p class="lede">The big picture, CCAR-P crosswalk, Databricks platform map, and key-terminology glossary stay living in <a href="https://claude.ai/artifact/Goyragw6RjSBaXFWDXjHtM" target="_blank" rel="noopener">Day 1 Part 1</a>. Folder 2 is complete in <a href="https://claude.ai/artifact/MGHtXqemg9Za8vgux7HRmK" target="_blank" rel="noopener">Day 1 Part 2</a>, and Folder 3 in <a href="https://claude.ai/artifact/033e2675-1b01-4f5b-ab14-3265ca0bbec1" target="_blank" rel="noopener">Day 2 Part 1</a>. This page is the last stretch: Folder 4, "Deploying and Monitoring Agents on Databricks," Files 29-36. It is the folder that closes the loop this whole notebook has been building toward — everything in Folders 1-3 was about building and evaluating an agent offline; Folder 4 is about what happens once it is actually live and someone else is depending on it.</p>
+      <p class="lede cn">大图景、CCAR-P 对照、Databricks 平台结构图，以及术语表，继续留在<a href="https://claude.ai/artifact/Goyragw6RjSBaXFWDXjHtM" target="_blank" rel="noopener">Day 1 第一部分</a>里。Folder 2 已经在<a href="https://claude.ai/artifact/MGHtXqemg9Za8vgux7HRmK" target="_blank" rel="noopener">Day 1 第二部分</a>里讲完，Folder 3 在<a href="https://claude.ai/artifact/033e2675-1b01-4f5b-ab14-3265ca0bbec1" target="_blank" rel="noopener">Day 2 第一部分</a>里讲完。这一页是最后一段：Folder 4，"Deploying and Monitoring Agents on Databricks"，File 29-36。这正是整本笔记一直在朝着走的那个闭环——Folder 1-3 讲的都是怎么在线下把一个 agent 建好、评测好；Folder 4 讲的是这个 agent 真正上线之后、有别人在依赖它的时候，会发生什么。</p>
+    </header>
+
+    <section class="block" id="p4-note">
+      <h2><span class="num">·</span> Note on this part</h2>
+      <div class="pair">
+        <p>Folder 4 has eight files (global numbering continues: File 29 is Folder 4's first file, not File 1 again), organized around the same four-stage arc its own opening lecture names: <strong>deploy</strong> (Databricks Apps, DABs), <strong>observe</strong> (MLflow Tracing), <strong>evaluate</strong> (the scorers from Folder 3, now running continuously in production), and <strong>monitor</strong> (backfill, SQL queries over Unity Catalog trace tables). This is deliberately the same vocabulary Folder 3 used, reapplied to traffic that is actually live instead of a curated eval dataset.</p>
+        <p class="cn">Folder 4 一共八个文件（全局编号继续往下走：File 29 是 Folder 4 的第一个文件，不是重新从 File 1 开始），围绕着这个文件夹自己开篇那节课点名的那个四阶段弧线来组织：<strong>部署</strong>（Databricks Apps、DABs）、<strong>观测</strong>（MLflow Tracing）、<strong>评测</strong>（Folder 3 里讲的那些 scorer，现在持续跑在生产环境里）、<strong>监控</strong>（回填、对 Unity Catalog trace 表跑 SQL 查询）。这是故意沿用 Folder 3 的那套词汇，只是这次套用在真正的线上流量上，而不是一份精心准备好的评测数据集上。</p>
+      </div>
+      <div class="callout">
+        <div class="label">Reading order</div>
+        <p>File 29 (lecture) lays out deployment architecture in the abstract. File 30 (demo) builds one agent through three concrete stages — bare chatbot, traced chatbot, tool-calling chatbot — and is the single most load-bearing file in the folder for an actual build. File 31 (lecture) backs up to explain MCP and tracing in more depth. File 32 (demo) goes deep on production-grade tracing techniques File 30 only touched lightly. File 33 (lecture) is Folder 3's scorer material, re-framed for always-on production monitoring rather than one-shot evaluation. Files 34-35 (labs) are the hands-on version of File 33. File 36 (appendix, optional) covers a newer, more automated alternative to the Apps+DABs path.</p>
+      </div>
+    </section>
+
+    <section class="block" id="agenda4">
+      <h2><span class="num">08</span> Folder 4 Agenda</h2>
+      <div class="tablewrap">
+        <table>
+          <caption>Deploying and Monitoring Agents on Databricks — course agenda, with global File numbers added</caption>
+          <thead><tr><th>File</th><th>Type</th><th>Notebook</th><th>Covers</th></tr></thead>
+          <tbody>
+            <tr><td class="term">29</td><td>Lecture</td><td>Agent Deployment on Databricks</td><td>Agent lifecycle, Databricks Apps, DABs, deployment patterns, resource injection, Unity Gateway</td></tr>
+            <tr><td class="term">30</td><td>Demo</td><td>Deploying an Observable Agent</td><td>Build an agent through three stages: deploy as an App, add MLflow tracing, integrate an MCP tool</td></tr>
+            <tr><td class="term">31</td><td>Lecture</td><td>Tool Integration and Observability</td><td>Model Context Protocol, MCP server types, MCP lifecycle, MLflow Tracing foundations</td></tr>
+            <tr><td class="term">32</td><td>Demo</td><td>Tracing for Production Agents</td><td>Manual spans, span types, custom attributes, multi-turn session grouping, programmatic trace search</td></tr>
+            <tr><td class="term">33</td><td>Lecture</td><td>Production Evaluation and Monitoring</td><td>Scorer types, custom scorers, multi-turn judges, sampling strategies, scorer lifecycle, backfill</td></tr>
+            <tr><td class="term">34</td><td>Lab</td><td>Online Evaluation with Multi-Turn Conversations</td><td>Deploy judges, create custom scorers, tune sampling rates, run the metrics computation job</td></tr>
+            <tr><td class="term">35</td><td>Lab</td><td>Backfilling and Querying Multi-Turn Conversations</td><td>Backfill historical traces, query traces and assessments in Unity Catalog with SQL, scorer cleanup</td></tr>
+            <tr><td class="term">36</td><td>Lecture (Appendix)</td><td>Agent Bricks CLI</td><td>init / dev / deploy lifecycle, agent.toml, managed tools, memory, and sessions (Beta)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pair">
+        <p>Requirements stated by the course: a Databricks workspace with serverless compute (Version 6), and the course model services in <code>dbacademy.agent_deployment</code> (<code>agent-model</code> and <code>judge-model</code>), created by the workspace setup script — the same provisioning pattern Day 1 found behind every earlier folder's shared fixtures.</p>
+        <p class="cn">课程写明的前提条件：一个带 serverless compute（Version 6）的 Databricks workspace，以及 <code>dbacademy.agent_deployment</code> 里的课程模型服务（<code>agent-model</code> 和 <code>judge-model</code>），由 workspace 的 setup 脚本创建——跟 Day 1 发现的、前面每个 Folder 共享 fixture 背后的那套配置方式一样。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-file29">
+      <h2><span class="num">File 29</span> Lecture — Agent Deployment on Databricks</h2>
+      <div class="tag">Duration: 20 minutes · the architecture that moves a notebook prototype into a production Databricks App</div>
+
+      <h3 class="sub" id="f29-a"><span class="num">A</span> The Agent Lifecycle</h3>
+      <div class="pair">
+        <p>A production agent must be <strong>deployed</strong> to infrastructure that serves requests, <strong>observed</strong> so you can understand its behavior, <strong>evaluated</strong> to measure quality, and <strong>monitored</strong> continuously to catch regressions. These four stages are not strictly sequential — you can add tracing before deployment, attach scorers to an agent that is already live, or backfill evaluation data onto traces logged weeks ago. The lifecycle is designed to be incremental, which is exactly the order File 30's demo actually builds in: deploy first with nothing else, then layer tracing, then layer a tool.</p>
+        <p class="cn">一个生产级 agent 必须被<strong>部署</strong>到能处理请求的基础设施上，被<strong>观测</strong>以便理解它的行为，被<strong>评测</strong>来衡量质量，还要被持续<strong>监控</strong>以便在用户发现之前就抓到回归。这四个阶段并不是严格按顺序来的——你可以在部署之前就先加上 tracing，可以给一个已经上线的 agent 挂上 scorer，也可以把评测数据回填到几周前记下来的 trace 上。这套生命周期就是设计成可以一步一步加的，这恰好也是 File 30 的 demo 实际构建的顺序：先什么都不加先部署，然后叠加 tracing，再叠加一个工具。</p>
+      </div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 680 190" role="img" aria-label="The agent lifecycle on Databricks, four stages in sequence: Deploy with Databricks Apps, Observe with MLflow Tracing, Evaluate with scorers and judges, Monitor with backfill and SQL queries over Unity Catalog, with a dashed return arrow showing the cycle is incremental not strictly sequential.">
+          <defs>
+            <marker id="arrH1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+          <rect x="10" y="20" width="150" height="86" rx="9" class="dg-box-hi"/>
+          <text x="85" y="50" text-anchor="middle" class="dg-txt" font-size="12" font-weight="700">DEPLOY</text>
+          <text x="85" y="68" text-anchor="middle" class="dg-txt-mono" font-size="10.5">Databricks Apps</text>
+          <text x="85" y="82" text-anchor="middle" class="dg-txt-muted" font-size="9.5">ship with a bundle</text>
+          <path d="M160 63 L192 63" class="dg-line" stroke-width="1.6" marker-end="url(#arrH1)"/>
+
+          <rect x="192" y="20" width="150" height="86" rx="9" class="dg-box"/>
+          <text x="267" y="50" text-anchor="middle" class="dg-txt" font-size="12" font-weight="700">OBSERVE</text>
+          <text x="267" y="68" text-anchor="middle" class="dg-txt-mono" font-size="10.5">MLflow Tracing</text>
+          <text x="267" y="82" text-anchor="middle" class="dg-txt-muted" font-size="9.5">trace every request</text>
+          <path d="M342 63 L374 63" class="dg-line" stroke-width="1.6" marker-end="url(#arrH1)"/>
+
+          <rect x="374" y="20" width="150" height="86" rx="9" class="dg-box"/>
+          <text x="449" y="50" text-anchor="middle" class="dg-txt" font-size="12" font-weight="700">EVALUATE</text>
+          <text x="449" y="68" text-anchor="middle" class="dg-txt-mono" font-size="10.5">scorers &amp; judges</text>
+          <text x="449" y="82" text-anchor="middle" class="dg-txt-muted" font-size="9.5">score as traces arrive</text>
+          <path d="M524 63 L556 63" class="dg-line" stroke-width="1.6" marker-end="url(#arrH1)"/>
+
+          <rect x="556" y="20" width="114" height="86" rx="9" class="dg-box"/>
+          <text x="613" y="50" text-anchor="middle" class="dg-txt" font-size="12" font-weight="700">MONITOR</text>
+          <text x="613" y="68" text-anchor="middle" class="dg-txt-mono" font-size="10" font-size="9.5">backfill + query</text>
+          <text x="613" y="82" text-anchor="middle" class="dg-txt-muted" font-size="9.5">rescore history</text>
+
+          <path d="M613 106 Q613 150 340 150 Q85 150 85 108" fill="none" class="dg-line-hi" stroke-width="1.8" stroke-dasharray="7 6" marker-end="url(#arrH1)"/>
+          <rect x="220" y="134" width="240" height="30" rx="15" class="dg-box"/>
+          <text x="340" y="154" text-anchor="middle" class="dg-label" font-size="10.5" font-style="italic">incremental, not strictly sequential</text>
+        </svg>
+        <figcaption>The four-stage agent lifecycle File 29 opens with: deploy, observe, evaluate, monitor. The dashed arrow is the course's own explicit point that these stages can be added in any order and revisited — this is the same incremental spirit as Folder 3's offline-then-online evaluation progression.</figcaption>
+      </figure>
+
+      <h3 class="sub" id="f29-b"><span class="num">B</span> Deployment Architecture</h3>
+      <div class="pair">
+        <p><strong>B1. Databricks Apps</strong> provide managed hosting for web applications. The platform provisions compute, assigns the app its own <strong>service principal</strong> (the identity that determines what the app can access — model services, UC objects, experiments), and gives it a unique workspace-scoped URL. Apps are first-class workspace objects on the <strong>Apps</strong> page in the sidebar. <strong>B2. Declarative Automation Bundles (DABs)</strong> are the project structure describing the app and its resources: user-authored files (<code>agent.py</code>, <code>server.py</code>, <code>chat.html</code>, <code>pyproject.toml</code>) plus config files defined by the spec (<code>requirements.txt</code>, <code>databricks.yml</code>, <code>app.yaml</code>). Deployment is two independent steps — <code>databricks bundle deploy</code> creates/updates the resource declarations, then <code>databricks apps deploy &lt;app&gt;</code> pushes the source code.</p>
+        <p class="cn"><strong>B1. Databricks Apps</strong> 为 web 应用提供托管环境。平台负责配置 compute，给每个 app 分配一个属于它自己的<strong>service principal</strong>（决定这个 app 能访问什么的身份——模型服务、UC 对象、experiment），还给它一个独一无二、workspace 范围内的 URL。App 是 workspace 里的一级对象，在侧边栏的<strong>Apps</strong>页面能看到。<strong>B2. Declarative Automation Bundle（DAB）</strong>是描述这个 app 和它所依赖资源的项目结构：用户自己写的文件（<code>agent.py</code>、<code>server.py</code>、<code>chat.html</code>、<code>pyproject.toml</code>）加上由规范定义的配置文件（<code>requirements.txt</code>、<code>databricks.yml</code>、<code>app.yaml</code>）。部署是两个互相独立的步骤——<code>databricks bundle deploy</code>创建/更新资源声明，然后<code>databricks apps deploy &lt;app&gt;</code>把源代码推上去。</p>
+      </div>
+
+      <div class="callout">
+        <div class="label">B3. Model Serving vs. Databricks Apps — what the agent is treated as</div>
+        <p><strong>Model Serving treats the agent as a model:</strong> package it as an MLflow model, log and register it in Unity Catalog, Databricks hosts it behind a managed REST endpoint — the platform owns the server, you fit its predict-style interface. <strong>Databricks Apps treats the agent as an application:</strong> ordinary Python code in Git, running as a web service on managed compute, where you own the routes, async behavior, even a UI. Databricks now recommends Apps for new custom agents because agents behave like software (multi-step loops, tool calls, state, long-running, frequently changed), not like static model artifacts.</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>Model Serving vs. Databricks Apps, from File 29's own comparison table</caption>
+          <thead><tr><th>Concept</th><th>Model Serving</th><th>Databricks Apps</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Unit of deployment</td><td>A versioned model artifact</td><td>A codebase or application</td></tr>
+            <tr><td class="term">Lifecycle</td><td>Log, register, deploy an endpoint</td><td>Edit code, deploy (Git-driven CI/CD)</td></tr>
+            <tr><td class="term">Who owns the server</td><td>Databricks (you fit its interface)</td><td>You (custom routes); Databricks hosts it</td></tr>
+            <tr><td class="term">Iteration speed</td><td>Slower: repackage + redeploy each change</td><td>Fast: change code, redeploy in seconds</td></tr>
+            <tr><td class="term">Shape of an interaction</td><td>Request / response</td><td>Long-running, async, or streaming</td></tr>
+            <tr><td class="term">Front end</td><td>Separate (e.g. the Review App)</td><td>Can ship a chat UI alongside the agent</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pair">
+        <p><strong>What stays the same either way:</strong> MLflow tracing and evaluation work identically on both. Agents reach governed Databricks resources (UC functions, AI Search, foundation models) under scoped permissions regardless of which deployment pattern hosts them. Model Serving remains the home for the LLMs and classic ML models an agent <em>calls</em> — Apps hosts the agent, serving endpoints still host the models behind it.</p>
+        <p class="cn"><strong>两种方式都不变的地方：</strong>MLflow tracing 和评测在两边跑起来是一样的。Agent 访问受治理的 Databricks 资源（UC 函数、AI Search、基础模型）走的都是受限权限，跟选哪种部署方式无关。Model Serving 仍然是 agent <em>调用</em>的那些 LLM 和传统 ML 模型的家——Apps 托管的是 agent 本身，serving endpoint 托管的仍然是 agent 背后那些模型。</p>
+      </div>
+
+      <h4 class="sub3"><span class="num">B4</span> Resource Injection</h4>
+      <div class="pair">
+        <p><code>databricks.yml</code> declares every resource the app depends on; <code>app.yaml</code>'s top-level <code>env:</code> section injects those resources into the running app as environment variables, so agent code reads configuration from the environment instead of hardcoding workspace-specific values. The same code runs unchanged across dev, staging, and production by changing only the <code>databricks.yml</code> resource declarations.</p>
+        <p class="cn"><code>databricks.yml</code>声明这个 app 依赖的每一个资源；<code>app.yaml</code>顶层的<code>env:</code>部分把这些资源作为环境变量注入到运行中的 app 里，所以 agent 代码从环境里读配置，而不是把 workspace 特定的值写死在代码里。同一份代码在 dev、staging、生产环境之间不用改一个字，只需要改<code>databricks.yml</code>里的资源声明。</p>
+      </div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 680 190" role="img" aria-label="Resource injection flow: databricks.yml declares a resource such as a model service, app.yaml maps it to an environment variable name with valueFrom, and agent code reads that environment variable with os.environ at startup.">
+          <defs>
+            <marker id="arrH2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+          <rect x="10" y="20" width="200" height="110" rx="9" class="dg-box-hi"/>
+          <text x="110" y="48" text-anchor="middle" class="dg-txt-mono" font-size="12" font-weight="700">databricks.yml</text>
+          <text x="110" y="70" text-anchor="middle" class="dg-txt-muted" font-size="10">resources.apps.*.resources:</text>
+          <text x="110" y="86" text-anchor="middle" class="dg-txt-mono" font-size="10">name: model-service</text>
+          <text x="110" y="102" text-anchor="middle" class="dg-txt-mono" font-size="10">permission: EXECUTE</text>
+          <path d="M210 75 L242 75" class="dg-line" stroke-width="1.6" marker-end="url(#arrH2)"/>
+
+          <rect x="242" y="20" width="200" height="110" rx="9" class="dg-box"/>
+          <text x="342" y="48" text-anchor="middle" class="dg-txt-mono" font-size="12" font-weight="700">app.yaml</text>
+          <text x="342" y="70" text-anchor="middle" class="dg-txt-muted" font-size="10">env: name: MODEL_SERVICE</text>
+          <text x="342" y="86" text-anchor="middle" class="dg-txt-mono" font-size="10">valueFrom: model-service</text>
+          <path d="M442 75 L474 75" class="dg-line" stroke-width="1.6" marker-end="url(#arrH2)"/>
+
+          <rect x="474" y="20" width="196" height="110" rx="9" class="dg-box"/>
+          <text x="572" y="48" text-anchor="middle" class="dg-txt-mono" font-size="12" font-weight="700">agent.py</text>
+          <text x="572" y="70" text-anchor="middle" class="dg-txt-mono" font-size="10">os.getenv(</text>
+          <text x="572" y="86" text-anchor="middle" class="dg-txt-mono" font-size="10">"MODEL_SERVICE")</text>
+          <text x="572" y="104" text-anchor="middle" class="dg-txt-muted" font-size="9.5">read at startup</text>
+
+          <text x="340" y="160" text-anchor="middle" class="dg-label" font-size="10.5" font-style="italic">same agent code runs unchanged across dev / staging / prod</text>
+        </svg>
+        <figcaption>Resource injection: the resource is declared once in databricks.yml, mapped to an env var name in app.yaml via valueFrom, and read by the agent at startup — decoupling agent logic from infrastructure config.</figcaption>
+      </figure>
+
+      <h4 class="sub3"><span class="num">B5</span> Unity Gateway</h4>
+      <div class="pair">
+        <p>Every model-service call from a deployed agent routes through <strong>Unity Gateway</strong>, Databricks' centralized AI governance layer: guardrails, rate limiting, usage tracking, traffic splitting, and inference-table logging, all configured on the service itself with zero agent code changes. Unity Gateway governs more than agent traffic — it is a unified governance layer across LLM endpoints, MCP servers, and coding agents (Cursor, Claude Code, Codex CLI), giving platform teams one place to manage AI access org-wide.</p>
+        <p class="cn">每一次从已部署的 agent 发出的模型服务调用，都会经过<strong>Unity Gateway</strong>——Databricks 的集中式 AI 治理层：护栏、速率限制、用量追踪、流量分流、推理表日志，这些全都配置在服务本身上，agent 代码一行都不用改。Unity Gateway 治理的不只是 agent 流量——它是一个统一的治理层，覆盖 LLM endpoint、MCP server，以及编码 agent（Cursor、Claude Code、Codex CLI），让平台团队有一个地方就能管住全组织的 AI 访问。</p>
+      </div>
+
+      <div class="crosswalk">
+        <div class="side">
+          <h4>CCAR-P crosswalk</h4>
+          <ul>
+            <li><strong>D1 (architecture) / D7 (dev productivity &amp; ops enablement)</strong> — the Model Serving vs. Apps decision is a textbook D1/D7 question: "agent behaves like software, not a static artifact" is the architect-level judgment call the exam rewards, not the CLI syntax underneath it.</li>
+            <li><strong>D5 (governance/safety/risk)</strong> — Unity Gateway as a single governance point across LLM endpoints, MCP servers, and coding agents is exactly the "one control plane, not N bolted-on controls" pattern D5 questions are built around.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout work">
+        <div class="label">Advana / FM link</div>
+        <p>Resource injection answers a real open question from Day 1's Advana reconnaissance: Advana's Databricks environment is on a different, lagging feature set from the public course UI, with Unity Catalog and serverless "in the implementation." A deployment pattern that reads every environment-specific value (catalog name, model service, warehouse ID) from <code>databricks.yml</code>/<code>app.yaml</code> rather than hardcoding it means an FM Insight agent built against the public-course pattern here can, in principle, point at Advana's actual resource names later with no code change — only a resource-declaration change. That is the exact decoupling an environment with a lagging, partially-rolled-out feature set needs.</p>
+        <p>资源注入这件事，回答了 Day 1 在 Advana 侦察时留下的一个真实的未解问题：Advana 的 Databricks 环境，功能版本比公开课程的 UI 要落后一些，Unity Catalog 和 serverless 都还"在实施中"。一种把每一个环境特定的值（catalog 名字、模型服务、warehouse ID）都从<code>databricks.yml</code>/<code>app.yaml</code>里读出来、而不是写死在代码里的部署方式，意味着这里按公开课程套路搭出来的 FM Insight agent，原则上以后可以直接指向 Advana 里真实的资源名字，不用改一行代码——只需要改资源声明。这恰好是一个功能滞后、还没完全上线的环境最需要的那种解耦。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-file30">
+      <h2><span class="num">File 30</span> Demo — Deploying an Observable Agent</h2>
+      <div class="tag">Duration: 30 minutes · the single most load-bearing file in Folder 4 for an actual build</div>
+
+      <div class="pair">
+        <p>This demo progressively builds one agent in three stages, each redeploying the same Databricks App: a bare chatbot with no observability; the same chatbot with MLflow tracing wired in; the same chatbot with a SQL tool added through a Databricks-provided MCP. Each stage is additive — nothing from an earlier stage is removed, and by the end every agent interaction, including tool calls, produces a structured MLflow trace with no change to how tracing itself works.</p>
+        <p class="cn">这个 demo 分三个阶段，逐步构建同一个 agent，每一阶段都是对同一个 Databricks App 重新部署：先是一个什么观测都没有的裸聊天机器人；然后是接上 MLflow tracing 的同一个聊天机器人；再是通过 Databricks 提供的 MCP 加上一个 SQL 工具的同一个聊天机器人。每一阶段都是叠加的——前一阶段的东西一个都不删，到最后，每一次 agent 交互，包括工具调用，都会产生一条结构化的 MLflow trace，而 tracing 本身的工作方式一点没变。</p>
+      </div>
+
+      <h3 class="sub" id="f30-c"><span class="num">C</span> Stage 1 — Define and Deploy a Basic Agent</h3>
+      <div class="pair">
+        <p>Six files make up the basic agent. <code>agent.py</code> defines the agent using the OpenAI Agents SDK, with <code>set_default_openai_client(AsyncDatabricksOpenAI(use_ai_gateway=True))</code> as the one line that routes every model call through Unity Gateway instead of the public OpenAI service, and <code>set_default_openai_api("responses")</code> so tool calls work with reasoning models. <code>server.py</code> is a small hand-written FastAPI server exposing <code>GET /</code> (a chat page) and <code>POST /invocations</code> (forwards messages to the agent) — the course notes that production agents should instead use MLflow's <code>AgentServer</code> template, which adds the standard Responses API, streaming, and a built-in chat UI. <code>pyproject.toml</code>, <code>app.yaml</code>, <code>databricks.yml</code>, and <code>requirements.txt</code> round out the bundle exactly as File 29 described.</p>
+        <p class="cn">六个文件构成了这个基础 agent。<code>agent.py</code>用 OpenAI Agents SDK 定义 agent，核心的一行是<code>set_default_openai_client(AsyncDatabricksOpenAI(use_ai_gateway=True))</code>——这一行把每一次模型调用都路由到 Unity Gateway，而不是公开的 OpenAI 服务；再加上<code>set_default_openai_api("responses")</code>，让工具调用能配合推理模型工作。<code>server.py</code>是一个手写的小 FastAPI 服务，暴露<code>GET /</code>（聊天页面）和<code>POST /invocations</code>（把消息转发给 agent）——课程特意说明，生产级 agent 应该改用 MLflow 的<code>AgentServer</code>模板，它自带标准 Responses API、流式输出，还有内置聊天 UI。<code>pyproject.toml</code>、<code>app.yaml</code>、<code>databricks.yml</code>、<code>requirements.txt</code>按 File 29 讲的那样补齐整个 bundle。</p>
+      </div>
+      <div class="codeblock">
+        <pre><code>## agent.py — Stage 1 (basic chatbot, no tracing, no tools)
+from agents import Agent, Runner, set_default_openai_api, set_default_openai_client
+from databricks_openai import AsyncDatabricksOpenAI
+import os
+
+MODEL_SERVICE = os.getenv("MODEL_SERVICE")
+
+set_default_openai_client(AsyncDatabricksOpenAI(use_ai_gateway=True))
+set_default_openai_api("responses")
+
+agent = Agent(
+    name="Simple Chatbot",
+    instructions="You are a helpful assistant. Answer the user's questions clearly and concisely.",
+    model=MODEL_SERVICE,
+)
+
+async def run_agent(messages: list[dict]) -> str:
+    result = await Runner.run(agent, messages)
+    return result.final_output</code></pre>
+      </div>
+      <div class="pair">
+        <p>Deployment is the same two-step CLI pattern as File 29 (<code>databricks bundle deploy</code>, then <code>databricks apps deploy</code>), or the equivalent through the Apps UI for a workspace without a Git folder — the demo gives parallel instructions for both, since the DABs UI needs a Git folder and not every lab environment (notably Vocareum) has one by default.</p>
+        <p class="cn">部署方式跟 File 29 一样，走同样的两步 CLI 流程（先<code>databricks bundle deploy</code>，再<code>databricks apps deploy</code>），或者在没有 Git 文件夹的 workspace 里，通过 Apps UI 做等效操作——demo 对两种方式都给了并列的操作说明，因为 DABs UI 需要一个 Git 文件夹，而不是每个实验环境（尤其是 Vocareum）默认都有。</p>
+      </div>
+
+      <h3 class="sub" id="f30-d"><span class="num">D</span> Stage 2 — Add MLflow Tracing</h3>
+      <div class="pair">
+        <p>Four files change. <code>agent.py</code> gains <code>set_trace_processors([])</code> (stops the Agents SDK sending its own traces to OpenAI), <code>mlflow.openai.autolog()</code> (records each Agents SDK step as a child span), <code>mlflow.set_experiment(experiment_id=...)</code> (targets the DAB-created experiment), and an <code>@mlflow.trace</code> decorator on <code>run_agent()</code> that wraps the whole call in a root span plus tags the trace with <code>agent_name</code> and <code>model_service</code>. <code>databricks.yml</code> adds an <code>experiments</code> resource and grants the app <code>CAN_EDIT</code> on it. <code>app.yaml</code> injects the experiment ID as <code>MLFLOW_EXPERIMENT_ID</code>. <code>pyproject.toml</code> adds <code>mlflow==3.16.1</code> as a dependency — without it, the app crashes on startup trying to import <code>mlflow</code>.</p>
+        <p class="cn">四个文件要改。<code>agent.py</code>里加上<code>set_trace_processors([])</code>（让 Agents SDK 不再把自己的 trace 发到 OpenAI 去）、<code>mlflow.openai.autolog()</code>（把 Agents SDK 每一步都记录成一个子 span）、<code>mlflow.set_experiment(experiment_id=...)</code>（指向 DAB 创建好的那个 experiment），还在<code>run_agent()</code>上加了一个<code>@mlflow.trace</code>装饰器，把整次调用都包进一个根 span 里，再给这条 trace 打上<code>agent_name</code>和<code>model_service</code>标签。<code>databricks.yml</code>加一个<code>experiments</code>资源，给 app 授予对它的<code>CAN_EDIT</code>权限。<code>app.yaml</code>把 experiment ID 当作<code>MLFLOW_EXPERIMENT_ID</code>注入进去。<code>pyproject.toml</code>加上<code>mlflow==3.16.1</code>作为依赖——没有它，app 一启动就会因为 import 不到<code>mlflow</code>而崩掉。</p>
+      </div>
+      <div class="codeblock">
+        <pre><code>## agent.py — Stage 2 additions (tracing wired in)
+from agents.tracing import set_trace_processors
+import mlflow
+
+set_trace_processors([])                 # stop sending Agents SDK traces to OpenAI
+mlflow.set_tracking_uri("databricks")
+mlflow.openai.autolog()                   # records each Agents SDK step as a child span
+mlflow.set_experiment(experiment_id=os.getenv("MLFLOW_EXPERIMENT_ID"))
+
+@mlflow.trace(name="mlflow_chatbot_run", span_type="AGENT")
+async def run_agent(messages: list[dict]) -> str:
+    mlflow.update_current_trace(tags={"agent_name": agent.name, "model_service": MODEL_SERVICE})
+    result = await Runner.run(agent, messages)
+    return result.final_output</code></pre>
+      </div>
+      <div class="callout work">
+        <div class="label">Grant the app access to the MLflow trace tables</div>
+        <p>When the experiment stores traces in Unity Catalog, MLflow writes them to four tables in <code>&lt;catalog&gt;.agent_deployment</code> (<code>_otel_spans</code>, <code>_otel_annotations</code>, <code>_otel_logs</code>, <code>_otel_metrics</code>). The app's service principal needs <strong>Can select and modify</strong> on all four, or it cannot write traces — the Apps-UI path in this demo has you add all four tables as resources by hand, one <code>table-N</code> resource key at a time. This is a real, easy-to-miss step: redeploying with just the experiment resource added is not enough.</p>
+      </div>
+
+      <h3 class="sub" id="f30-e"><span class="num">E</span> Stage 3 — Add MCP Tools</h3>
+      <div class="pair">
+        <p><code>agent.py</code>'s final version adds a <code>WorkspaceClient</code>, builds the URL of the Databricks-provided SQL MCP (<code>{host}/ai-gateway/mcp-services/system.ai.dbsql</code>), and wraps each request in <code>async with McpServer(url=..., workspace_client=ws, name="dbsql") as mcp_server:</code> — opening the connection per request, not once at startup, so concurrent requests never share one connection. The agent is constructed inside that block with <code>mcp_servers=[mcp_server]</code>, so the SDK lists the MCP's tools (here, <code>execute_sql</code>) at runtime. <code>databricks.yml</code> adds a <code>variables</code> block for the catalog name and warehouse lookup, plus two new resources: <code>SELECT</code> on the listings table and <code>CAN_USE</code> on the warehouse. No explicit grant is needed for <code>system.ai.dbsql</code> itself — all workspace users can already call Databricks-provided MCPs.</p>
+        <p class="cn"><code>agent.py</code>最终版本加了一个<code>WorkspaceClient</code>，拼出 Databricks 提供的 SQL MCP 的 URL（<code>{host}/ai-gateway/mcp-services/system.ai.dbsql</code>），然后把每一次请求都包进<code>async with McpServer(url=..., workspace_client=ws, name="dbsql") as mcp_server:</code>里——这个连接是按每次请求打开的，不是在启动时打开一次，所以并发请求永远不会共用一个连接。Agent 就是在这个代码块里面构建的，带着<code>mcp_servers=[mcp_server]</code>，这样 SDK 就会在运行时去列出这个 MCP 的工具（这里是<code>execute_sql</code>）。<code>databricks.yml</code>加了一个<code>variables</code>块来放 catalog 名字和 warehouse 查找，外加两个新资源：对 listing 表的<code>SELECT</code>和对 warehouse 的<code>CAN_USE</code>。<code>system.ai.dbsql</code>本身不需要专门授权——所有 workspace 用户本来就能调用 Databricks 提供的 MCP。</p>
+      </div>
+      <div class="codeblock">
+        <pre><code>## agent.py — Stage 3 additions (SQL MCP tool, per-request connection)
+from databricks.sdk import WorkspaceClient
+from databricks_openai.agents import McpServer
+
+LISTINGS_TABLE = os.getenv("LISTINGS_TABLE")
+ws = WorkspaceClient()
+DBSQL_URL = f"{ws.config.host}/ai-gateway/mcp-services/system.ai.dbsql"
+
+INSTRUCTIONS = (
+    "You are a helpful assistant. "
+    f"For questions about San Francisco Airbnb listings, query {LISTINGS_TABLE} with the execute_sql tool."
+)
+
+@mlflow.trace(name="tool_calling_chatbot_run", span_type="AGENT")
+async def run_agent(messages: list[dict]) -> str:
+    mlflow.update_current_trace(tags={"agent_name": "Tool-calling Chatbot", "model_service": MODEL_SERVICE})
+    async with McpServer(url=DBSQL_URL, workspace_client=ws, name="dbsql", timeout=60.0) as mcp_server:
+        agent = Agent(
+            name="Simple Chatbot", instructions=INSTRUCTIONS,
+            model=MODEL_SERVICE, mcp_servers=[mcp_server],
+        )
+        result = await Runner.run(agent, messages)
+    return result.final_output</code></pre>
+      </div>
+      <div class="pair">
+        <p>After redeploying, a query that triggers the tool (<em>"What is the average price for listings in the Mission neighborhood?"</em>) produces a trace showing the root <code>tool_calling_chatbot_run</code> span, one or more <code>execute_sql</code> spans (the agent may run a quick exploratory query before the real one — both are visible), and <code>Response</code> spans before and after each tool call. Nothing about the tracing code changed between Stage 2 and Stage 3 — <code>mlflow.openai.autolog()</code> records each MCP tool call as part of the same trace tree automatically.</p>
+        <p class="cn">重新部署之后，一个会触发工具调用的问题（比如说"Mission 社区的 listing 平均价格是多少"）会产生一条 trace，里面有根 span <code>tool_calling_chatbot_run</code>、一个或多个<code>execute_sql</code> span（agent 可能会先跑一个探索性的小查询，然后再跑真正要的那个——两次都能看到），还有每次工具调用前后的<code>Response</code> span。从 Stage 2 到 Stage 3，tracing 相关的代码一个字没改——<code>mlflow.openai.autolog()</code>会自动把每一次 MCP 工具调用记录成同一棵 trace 树的一部分。</p>
+      </div>
+
+      <h3 class="sub" id="f30-f"><span class="num">F-G</span> Filter Traces by Tag, and Clean Up</h3>
+      <div class="pair">
+        <p>Mixing tool-using and non-tool queries through the chat UI and then filtering the Traces tab by the <code>agent_name</code> or <code>model_service</code> tag shows the real value of trace metadata: both kinds of trace share the same root span and tags, and only the tool-call spans differ — the demo's explicit point is that the app records each request as a <strong>trace</strong>, not an MLflow <strong>run</strong>; a trace is the execution graph of one request, and tags on it are what let you filter and compare many requests over time. Cleanup is simply deleting the app from the Apps page and, optionally, the experiment — or <code>databricks bundle destroy</code> if deployed via CLI, which removes both together.</p>
+        <p class="cn">在聊天 UI 里混着发一些会用到工具的问题和不会用到工具的问题，然后在 Traces 标签页里按<code>agent_name</code>或<code>model_service</code>标签过滤，就能看出 trace 元数据真正的价值：两种 trace 共用同一个根 span 和同一套标签，只有工具调用的 span 不一样——demo 特意强调的一点是，app 记录的是每一次请求的<strong>trace</strong>，而不是 MLflow 的<strong>run</strong>；一条 trace 就是一次请求的执行图，而 trace 上的标签正是用来在大量请求里做筛选和对比的东西。清理工作就是去 Apps 页面删掉这个 app，顺便删掉 experiment——或者如果是用 CLI 部署的，用<code>databricks bundle destroy</code>一次性把两者一起删掉。</p>
+      </div>
+
+      <div class="crosswalk">
+        <div class="side">
+          <h4>CCAR-P crosswalk</h4>
+          <ul>
+            <li><strong>D3 (integration)</strong> — the three-stage build (bare → traced → tool-calling) is the clean minimal example of adding integration surface incrementally: each stage's new code is additive and nothing earlier breaks, which is the kind of integration-sequencing judgment D3 scenario questions probe.</li>
+            <li><strong>D5 (governance/safety/risk)</strong> — the UC trace-table permission step (SELECT + MODIFY, explicitly, not ALL_PRIVILEGES) is a concrete, exam-relevant example of the "least-sufficient grant, not a broad one" pattern that recurs across the course's governance material.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout work">
+        <div class="label">Advana / FM link</div>
+        <p>This three-stage build is the closest thing in the whole course to a literal template for a first FM Insight production agent: Stage 1 is "does the agent even run as an App," Stage 2 is "can I see what it did" (the audit-relevant question for anything touching an audit-opinion number), Stage 3 is "can it safely query governed data" (the GFEBS/Navy ERP equivalent of the listings table, reached through a scoped MCP with explicit SELECT, not a blanket grant). Building FM Insight's first agent in this same order — deploy, then trace, then tool — gives a demonstrable artifact at every stage instead of one large all-or-nothing delivery, which is the same "fast, visible win" argument Day 2 Part 1's adoption plan made for Phase 0.</p>
+        <p>这个三阶段构建，大概是整门课里最接近"FM Insight 第一个生产 agent 该怎么搭"的字面模板了：Stage 1 是"这个 agent 能不能先跑起来成为一个 App"，Stage 2 是"我能不能看到它刚才做了什么"（这是碰到任何审计意见相关数字时都绕不开的审计问题），Stage 3 是"它能不能安全地查受治理的数据"（对应 GFEBS/Navy ERP 的，就是这里的 listing 表，通过一个限定范围、明确 SELECT 权限而不是一股脑全给的 MCP 来访问）。按这个顺序——先部署、再 trace、再接工具——来搭 FM Insight 的第一个 agent，每一阶段都能拿出一个可以展示的东西，而不是等一个大而全、一次性交付的东西，这跟 Day 2 第一部分那份采用计划给 Phase 0 的"快速、看得见的小胜利"是同一个道理。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-file31">
+      <h2><span class="num">File 31</span> Lecture — Tool Integration and Observability</h2>
+      <div class="tag">Duration: 20 minutes · backs up to explain MCP and tracing at the conceptual level File 30 only showed in code</div>
+
+      <h3 class="sub" id="f31-a"><span class="num">A</span> Model Context Protocol</h3>
+      <div class="pair">
+        <p><strong>A1.</strong> MCP is "a USB-C port for AI": a standardized interface so any compliant client and server can connect, instead of every tool integration needing bespoke API wrappers, auth handling, and response parsing. It follows a client-server architecture with three participants: the <strong>Host</strong> (the AI application managing one or more clients, e.g. a Databricks App), the <strong>Client</strong> (maintains one dedicated connection per server), and the <strong>Server</strong> (exposes tools, resources, or prompts — in practice, tools are the dominant primitive agents use).</p>
+        <p class="cn"><strong>A1.</strong> MCP 就是"AI 世界的 USB-C 接口"：一个标准化的接口，让任何符合协议的客户端和服务端都能互相连上，而不是每接一个工具都要专门写一套 API 封装、认证处理、响应解析。它走的是客户端-服务端架构，三个参与者：<strong>Host</strong>（管理一个或多个客户端的 AI 应用，比如一个 Databricks App）、<strong>Client</strong>（每个 server 维护一条专属连接）、<strong>Server</strong>（暴露 tool、resource 或 prompt——实际用起来，tool 是 agent 最常用的那个原语）。</p>
+      </div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 560 170" role="img" aria-label="MCP client-server architecture: a Databricks App is the MCP Host, containing one MCP Client per server; each client holds a dedicated connection to one MCP Server, which exposes tools, resources, and prompts.">
+          <defs>
+            <marker id="arrH3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+          <rect x="10" y="20" width="170" height="130" rx="9" class="dg-box-hi"/>
+          <text x="95" y="42" text-anchor="middle" class="dg-txt" font-size="11.5" font-weight="700">MCP HOST</text>
+          <text x="95" y="60" text-anchor="middle" class="dg-txt-muted" font-size="9.5">(e.g. Databricks App)</text>
+          <rect x="30" y="76" width="130" height="58" rx="7" class="dg-box"/>
+          <text x="95" y="100" text-anchor="middle" class="dg-txt-mono" font-size="10">MCP Client</text>
+          <text x="95" y="118" text-anchor="middle" class="dg-txt-muted" font-size="9">one per server</text>
+          <path d="M180 105 L222 105" class="dg-line" stroke-width="1.6" marker-end="url(#arrH3)"/>
+
+          <rect x="222" y="60" width="150" height="90" rx="9" class="dg-box"/>
+          <text x="297" y="88" text-anchor="middle" class="dg-txt" font-size="11.5" font-weight="700">MCP SERVER</text>
+          <text x="297" y="108" text-anchor="middle" class="dg-txt-muted" font-size="9.5">tools · resources</text>
+          <text x="297" y="122" text-anchor="middle" class="dg-txt-muted" font-size="9.5">· prompts</text>
+          <path d="M372 105 L404 105" class="dg-line" stroke-width="1.6" marker-end="url(#arrH3)"/>
+
+          <rect x="404" y="76" width="146" height="58" rx="7" class="dg-box-warn"/>
+          <text x="477" y="100" text-anchor="middle" class="dg-txt-mono" font-size="10">tools/list</text>
+          <text x="477" y="118" text-anchor="middle" class="dg-txt-mono" font-size="10">tools/call</text>
+        </svg>
+        <figcaption>MCP's three participants: a Host (the app) contains one Client per connected Server; each Server exposes tools discovered at runtime via tools/list and invoked via tools/call.</figcaption>
+      </figure>
+
+      <div class="tablewrap">
+        <table>
+          <caption>Three kinds of MCP server on Databricks (File 31, A2)</caption>
+          <thead><tr><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Databricks-provided</td><td>MCPs in <code>system.ai</code>, hosted by Databricks — nothing to run</td><td><code>system.ai.dbsql</code>, <code>system.ai.genie_one_mcp</code>, <code>system.ai.github</code></td></tr>
+            <tr><td class="term">External</td><td>A self-hosted or third-party MCP server you register</td><td>A partner's MCP server</td></tr>
+            <tr><td class="term">Custom</td><td>Your own MCP server, built on Databricks Apps and registered</td><td>Domain-specific tools, a REST API exposed as MCP tools</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pair">
+        <p>An MCP on Databricks is a Unity Catalog object with a three-level name (e.g. <code>system.ai.github</code>); agents reach it through Unity Gateway, which checks <code>EXECUTE</code> on the MCP plus <code>USE CATALOG</code>/<code>USE SCHEMA</code> on its catalog and schema — the same governance primitive File 29's Unity Gateway section named, applied specifically to tool access. <strong>A3.</strong> As of protocol version 2026-07-28, MCP is stateless: no open/close handshake, each request stands alone. Databricks' own MCPs still perform the earlier <code>initialize</code> handshake (versions up to 2025-11-25), and <code>McpServer</code> handles it for you. The host — not the protocol — decides when to call a tool; errors with invalid arguments return <code>isError: true</code> so the model can retry, while an unknown tool or malformed request returns a JSON-RPC error. <strong>A4.</strong> In a deployed app, open the MCP connection per request (never shared across concurrent requests), and grant the service principal <code>EXECUTE</code> on the MCP plus whatever access its tools need underneath (e.g. <code>SELECT</code> on a table a SQL tool reads).</p>
+        <p class="cn">Databricks 上的一个 MCP 是一个带三段式名字的 Unity Catalog 对象（比如<code>system.ai.github</code>）；agent 通过 Unity Gateway 访问它，Gateway 会检查对这个 MCP 的<code>EXECUTE</code>权限，还有对它所在 catalog 和 schema 的<code>USE CATALOG</code>/<code>USE SCHEMA</code>权限——这跟 File 29 Unity Gateway 那一节讲的治理原语是同一个，只是专门用在工具访问上。<strong>A3.</strong> 从协议版本 2026-07-28 开始，MCP 是无状态的：没有打开/关闭的握手，每次请求都是独立的。Databricks 自己的 MCP 仍然会做早期那种<code>initialize</code>握手（2025-11-25 之前的版本都有），<code>McpServer</code>会替你处理好这个。决定什么时候调用工具的是 host（应用），不是协议本身；参数不对导致工具失败，会返回<code>isError: true</code>，让模型有机会自己纠正重试；而未知工具或格式错误的请求，会返回一个 JSON-RPC 错误。<strong>A4.</strong> 在已部署的 app 里，MCP 连接要按每次请求打开（永远不要在并发请求之间共用），还要给 service principal 授予对 MCP 的<code>EXECUTE</code>权限，加上它的工具底层需要的任何访问权限（比如一个 SQL 工具要读的表上的<code>SELECT</code>）。</p>
+      </div>
+
+      <h3 class="sub" id="f31-b"><span class="num">B</span> Observability with MLflow Tracing</h3>
+      <div class="pair">
+        <p><strong>B1.</strong> A trace is a tree of spans, each capturing inputs/outputs, timing, span type, and status. <strong>Automatic tracing</strong> (<code>mlflow.openai.autolog()</code>) covers the agent's model and tool calls through the OpenAI SDK with zero extra code; <strong>custom spans</strong> (<code>@mlflow.trace</code> or <code>mlflow.start_span()</code>) trace your own logic — preprocessing, business rules — into the same trace tree. A typical agent trace has a root <code>AGENT</code> span with child <code>CHAT_MODEL</code>, <code>TOOL</code>, and <code>RETRIEVER</code> spans.</p>
+        <p class="cn"><strong>B1.</strong> 一条 trace 就是一棵 span 组成的树，每个 span 都记录输入/输出、时间、span 类型、状态。<strong>自动 tracing</strong>（<code>mlflow.openai.autolog()</code>）通过 OpenAI SDK 自动覆盖 agent 的模型调用和工具调用，一行额外代码都不用写；<strong>自定义 span</strong>（<code>@mlflow.trace</code>或<code>mlflow.start_span()</code>）把你自己的逻辑——预处理、业务规则——也 trace 进同一棵树里。一条典型的 agent trace，根上是一个<code>AGENT</code> span，下面挂着<code>CHAT_MODEL</code>、<code>TOOL</code>、<code>RETRIEVER</code>这些子 span。</p>
+      </div>
+      <div class="pair">
+        <p><strong>B2. Traces in production</strong> log to an MLflow Experiment, the hub where observability and evaluation data meet — scorers evaluate traces, not raw requests; any agent producing MLflow traces can use the same scorer infrastructure. Three settings matter at real traffic: install <code>mlflow-tracing</code> (a smaller package with just what tracing needs) instead of full <code>mlflow</code>; <code>MLFLOW_ENABLE_ASYNC_TRACE_LOGGING</code> logs in the background so requests don't wait (on by default outside notebooks); <code>MLFLOW_TRACE_SAMPLING_RATIO</code> exports only a share of traces (default <code>1.0</code>, every trace).</p>
+        <p class="cn"><strong>B2. 生产环境里的 trace</strong>会记录到一个 MLflow Experiment 里，这是观测数据和评测数据汇合的地方——scorer 评测的是 trace，不是原始请求；任何能产出 MLflow trace 的 agent，都能用上同一套 scorer 基础设施。真实流量下，三个设置很关键：安装<code>mlflow-tracing</code>（一个只带 tracing 所需内容的精简包）而不是完整的<code>mlflow</code>；<code>MLFLOW_ENABLE_ASYNC_TRACE_LOGGING</code>在后台记录日志，这样请求不用等（在 notebook 之外默认开启）；<code>MLFLOW_TRACE_SAMPLING_RATIO</code>只导出一部分 trace（默认<code>1.0</code>，全部导出）。</p>
+      </div>
+      <div class="callout">
+        <div class="label">B3. Storing traces in Unity Catalog</div>
+        <p>Databricks recommends UC Delta-table storage, in OpenTelemetry format, for new and production workloads: unlimited retention (vs. 100,000 traces per experiment in the fallback store), SQL-queryable, governed by UC schema/table permissions rather than experiment ACLs. Bind it only when the experiment is <em>created</em> (via <code>trace_location=UnityCatalog(...)</code>) — it cannot be added later, though multiple experiments can share one UC location. This creates four Delta tables (<code>_otel_spans</code>, <code>_otel_annotations</code>, <code>_otel_logs</code>, <code>_otel_metrics</code>). Access needs explicit <code>MODIFY</code> + <code>SELECT</code> — <code>ALL_PRIVILEGES</code> is not sufficient. Ingestion is capped at 200 traces/second/workspace and 100 MB/second/table.</p>
+      </div>
+
+      <div class="crosswalk">
+        <div class="side">
+          <h4>CCAR-P crosswalk</h4>
+          <ul>
+            <li><strong>D3 (integration) — observability at scale</strong> is a named weak spot in Peter's study log, and File 31 B2-B3 (async logging, sampling ratio, UC storage limits, the per-table SELECT+MODIFY grant) is the most direct, exam-relevant material in the whole folder for that exact objective.</li>
+            <li><strong>D3 — integration protocol choice</strong> (another named weak spot): MCP's stateless-as-of-2026-07-28 design, with Databricks' own MCPs still keeping the older initialize handshake for backward compatibility, is a concrete example of a protocol-versioning tradeoff an exam scenario could probe.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout work">
+        <div class="label">Advana / FM link</div>
+        <p>The UC-trace-storage governance model (SELECT + MODIFY explicitly, never ALL_PRIVILEGES, on a per-table basis) is a direct answer to how FM Insight's own agent decisions should be retained for DODIG review: an agent trace touching a GFEBS or Navy ERP balance needs the same explicit, auditable grant structure as the underlying financial table itself, not a broader convenience grant that would show up as an undocumented control gap in an A-123 test. The 200 traces/second/workspace cap is also a real capacity-planning number worth validating against FM Insight's expected production volume before committing to a single shared workspace for the whole FM community.</p>
+        <p>UC trace 存储这套治理模型（按表明确授予 SELECT + MODIFY，绝不给 ALL_PRIVILEGES）直接回答了 FM Insight 自己的 agent 决策该怎么留存、以供 DODIG 审查这个问题：一条碰到 GFEBS 或 Navy ERP 余额的 agent trace，需要跟底层财务表本身一样明确、可审计的授权结构，而不是一个图方便给的更宽泛的权限——那种权限在 A-123 测试里会直接暴露成一个没有文档记录的控制缺口。每 workspace 每秒 200 条 trace 的上限，也是一个值得拿去对照 FM Insight 预期生产流量的真实容量规划数字，值得在决定把整个 FM 社区都放进同一个共享 workspace 之前先验证清楚。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-file32">
+      <h2><span class="num">File 32</span> Demo — Tracing for Production Agents</h2>
+      <div class="tag">Duration: 30 minutes · goes deep on the production tracing techniques File 30 only touched lightly</div>
+
+      <div class="pair">
+        <p>Where File 30 showed tracing as a one-line add-on, File 32 is entirely about what production-grade tracing needs beyond that: manual spans with semantic types, custom attributes and trace metadata, multi-turn session grouping, and programmatic trace search in both Python and SQL. The experiment here is bound to Unity Catalog from the start, so every technique in this file is one you can actually query afterward.</p>
+        <p class="cn">File 30 把 tracing 展示成一行代码就能加上去的东西；File 32 则完全是在讲生产级 tracing 在这基础上还需要什么：带语义类型的手动 span、自定义属性和 trace 元数据、多轮会话分组，以及用 Python 和 SQL 两种方式对 trace 做程序化检索。这个文件里的 experiment 从一开始就绑定到 Unity Catalog，所以这个文件里讲的每一种技巧，事后都真的可以拿去查。</p>
+      </div>
+
+      <h3 class="sub" id="f32-b"><span class="num">B</span> Manual Tracing with Decorators and Span Types</h3>
+      <div class="pair">
+        <p><code>span_type</code> on <code>@mlflow.trace</code> is a semantic label — not cosmetic — that tells MLflow what kind of GenAI step a function represents, enabling structured trace trees, specialized UI rendering, and downstream scorers that key off span type directly (File 32's own example: <code>RetrievalGroundedness</code> and <code>RetrievalRelevance</code> locate <code>RETRIEVER</code> spans specifically to extract retrieved documents — a judge with no RETRIEVER span to find simply cannot run).</p>
+        <p class="cn"><code>@mlflow.trace</code>上的<code>span_type</code>是一个语义标签——不只是装饰性的——它告诉 MLflow 一个函数代表的是哪种 GenAI 步骤，由此支撑起结构化的 trace 树、UI 里的专门渲染方式，还有下游那些直接认 span 类型的 scorer（File 32 自己举的例子：<code>RetrievalGroundedness</code>和<code>RetrievalRelevance</code>专门去找<code>RETRIEVER</code> span 来提取检索到的文档——一个判官如果找不到 RETRIEVER span，根本就跑不起来）。</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>Common span_type values and when to use each (File 32, B1)</caption>
+          <thead><tr><th>span_type</th><th>Use for</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td class="term">AGENT</td><td>The top-level orchestrator; usually the root span</td><td><code>def travel_agent(query) -&gt; str:</code></td></tr>
+            <tr><td class="term">TOOL</td><td>UC functions, SQL queries, API calls, utilities the agent invokes</td><td><code>def lookup_weather(city) -&gt; dict:</code></td></tr>
+            <tr><td class="term">RETRIEVER</td><td>A retrieval/AI-search step; required by RetrievalGroundedness and RetrievalRelevance scorers</td><td><code>def search_knowledge_base(query) -&gt; list:</code></td></tr>
+            <tr><td class="term">CHAT_MODEL</td><td>The underlying LLM call; autologging creates this automatically for supported providers</td><td><code>def call_llm(messages) -&gt; str:</code></td></tr>
+            <tr><td class="term">PARSER</td><td>Parsing/formatting/pre-post-processing logic</td><td><code>def extract_json_from_response(raw) -&gt; dict:</code></td></tr>
+            <tr><td class="term">CHAIN / FUNCTION</td><td>A higher-level sequence of steps, or the generic fallback</td><td><code>def rag_pipeline(question) -&gt; str:</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 560 190" role="img" aria-label="A span tree example from File 32: a root CHAIN span named travel_agent with two children, a TOOL span for lookup_weather and an auto-captured CHAT_MODEL span, with the TOOL span's input and output shown inline.">
+          <rect x="10" y="20" width="220" height="48" rx="8" class="dg-box-hi"/>
+          <text x="120" y="38" text-anchor="middle" class="dg-txt-mono" font-size="11" font-weight="700">CHAIN</text>
+          <text x="120" y="54" text-anchor="middle" class="dg-txt-mono" font-size="10">travel_agent</text>
+          <path d="M60 68 L60 92" class="dg-line" stroke-width="1.6"/>
+          <path d="M60 92 L180 92" class="dg-line" stroke-width="1.6"/>
+          <path d="M180 92 L180 102" class="dg-line" stroke-width="1.6"/>
+          <path d="M60 92 L60 102" class="dg-line" stroke-width="1.6"/>
+
+          <rect x="10" y="102" width="220" height="68" rx="8" class="dg-box"/>
+          <text x="120" y="120" text-anchor="middle" class="dg-txt-mono" font-size="10.5" font-weight="700">TOOL</text>
+          <text x="120" y="136" text-anchor="middle" class="dg-txt-mono" font-size="10">lookup_weather</text>
+          <text x="120" y="152" text-anchor="middle" class="dg-txt-muted" font-size="9">in: "tokyo" → out: {temp_f: 72, ...}</text>
+
+          <rect x="260" y="102" width="220" height="68" rx="8" class="dg-box"/>
+          <text x="370" y="128" text-anchor="middle" class="dg-txt-mono" font-size="10.5" font-weight="700">CHAT_MODEL</text>
+          <text x="370" y="146" text-anchor="middle" class="dg-txt-muted" font-size="9.5">auto-captured by autolog()</text>
+          <text x="370" y="160" text-anchor="middle" class="dg-txt-muted" font-size="9">prompt + response</text>
+        </svg>
+        <figcaption>File 32's span tree: a manually-decorated CHAIN span (travel_agent) with a manually-decorated TOOL child (lookup_weather) and an automatically-captured CHAT_MODEL child — manual and automatic spans coexist in one trace with no extra wiring.</figcaption>
+      </figure>
+
+      <h3 class="sub" id="f32-c"><span class="num">C</span> Production Context — Trace Metadata vs. Span Attributes</h3>
+      <div class="pair">
+        <p>Two distinct mechanisms, easy to conflate: <strong>trace metadata</strong> (<code>mlflow.update_current_trace(session_id=..., user=...)</code>) is for session/user grouping that the Sessions view reads — it must be metadata, not an attribute, for grouping to work. <strong>Span attributes</strong> (<code>span.set_attributes({...})</code>) are per-request details like <code>app_version</code> or <code>request_source</code> — searchable and filterable via <code>span.attributes.*</code> in <code>mlflow.search_traces()</code>, but not what the Sessions view groups on. Both must be attached while the request runs; neither can be added afterward.</p>
+        <p class="cn">两个很容易被混为一谈、但其实完全不同的机制：<strong>trace 元数据</strong>（<code>mlflow.update_current_trace(session_id=..., user=...)</code>）是给会话/用户分组用的，Sessions 视图读的就是它——分组要起作用，必须是元数据，不能是属性。<strong>span 属性</strong>（<code>span.set_attributes({...})</code>）是单次请求级别的细节，比如<code>app_version</code>或<code>request_source</code>——可以在<code>mlflow.search_traces()</code>里通过<code>span.attributes.*</code>检索和过滤，但 Sessions 视图不会按它来分组。两者都必须在请求执行期间设置；事后都加不上去。</p>
+      </div>
+      <div class="codeblock">
+        <pre><code>@mlflow.trace(span_type="CHAIN")
+def travel_agent_with_context(user_query: str, user_id: str, session_id: str) -> str:
+    # Session/user go on the trace for grouping in the Sessions view
+    mlflow.update_current_trace(session_id=session_id, user=user_id)
+
+    # Per-request details stay as span attributes
+    span = mlflow.get_current_active_span()
+    span.set_attributes({"app_version": "1.2.0", "request_source": "web_ui"})
+
+    weather_info = lookup_weather("london")
+    response = client.chat.completions.create(model=MODEL_SERVICE, messages=[...], max_tokens=500)
+    return response.choices[0].message.content</code></pre>
+      </div>
+
+      <h3 class="sub" id="f32-d"><span class="num">D</span> Multi-Turn Conversation Tracing — Session-Level Grouping</h3>
+      <div class="pair">
+        <p>Each turn in a conversation produces its own trace. Sharing the same <code>session_id</code> and <code>user</code> trace metadata across turns, generated once (e.g. <code>str(uuid.uuid4())</code>) and passed into each <code>chat_turn()</code> call, is how MLflow groups them into one conversation in the Sessions view — exactly the mechanism Folder 3's multi-turn judges (<code>ConversationCompleteness</code>, <code>UserFrustration</code>, <code>ConversationalSafety</code>) depend on to see the whole thread rather than one isolated turn.</p>
+        <p class="cn">一次对话里的每一轮都会产生自己的一条 trace。在每一轮里共用同一个<code>session_id</code>和<code>user</code>trace 元数据——只生成一次（比如<code>str(uuid.uuid4())</code>），然后传进每一次<code>chat_turn()</code>调用里——正是 MLflow 在 Sessions 视图里把它们归并成一次对话的机制，这跟 Folder 3 里那几个多轮判官（<code>ConversationCompleteness</code>、<code>UserFrustration</code>、<code>ConversationalSafety</code>）用来看到整段对话、而不是孤立的一轮的机制，完全是同一个。</p>
+      </div>
+
+      <h3 class="sub" id="f32-e"><span class="num">E</span> Searching and Filtering Traces — Python and SQL</h3>
+      <div class="pair">
+        <p><code>mlflow.search_traces(locations=[experiment_id], filter_string=..., max_results=...)</code> is the production query API, returning a Pandas DataFrame. Filter on <code>trace.*</code> (status, timing — e.g. <code>trace.status = 'ERROR'</code>, <code>trace.execution_time_ms &gt; 5000</code>), <code>span.attributes.*</code> (e.g. <code>app_version</code>), <code>metadata.*</code>, or <code>tag.*</code>, combined with <code>AND</code>. Always add a <code>trace.timestamp_ms</code> bound for UC-backed traces, so each search scans less data. For dashboards and scheduled reports rather than interactive Python analysis, query the same data with SQL: MLflow exposes two views, <code>&lt;prefix&gt;_trace_unified</code> (full span data — needed for anything requiring duration) and <code>&lt;prefix&gt;_trace_metadata</code> (tags and assessments only — faster when span data isn't needed).</p>
+        <p class="cn"><code>mlflow.search_traces(locations=[experiment_id], filter_string=..., max_results=...)</code>是生产环境里的查询 API，返回一个 Pandas DataFrame。可以按<code>trace.*</code>（状态、耗时——比如<code>trace.status = 'ERROR'</code>、<code>trace.execution_time_ms &gt; 5000</code>）、<code>span.attributes.*</code>（比如<code>app_version</code>）、<code>metadata.*</code>或<code>tag.*</code>来过滤，用<code>AND</code>组合。对存在 UC 里的 trace，一定要加上一个<code>trace.timestamp_ms</code>的时间范围限制，这样每次查询扫描的数据才会少一些。如果要做仪表盘和定时报表，而不是交互式的 Python 分析，可以用 SQL 查同一份数据：MLflow 提供两个视图，<code>&lt;prefix&gt;_trace_unified</code>（完整 span 数据——要算耗时之类的就需要它）和<code>&lt;prefix&gt;_trace_metadata</code>（只有标签和评估结果——不需要 span 数据时查得更快）。</p>
+      </div>
+      <div class="codeblock">
+        <pre><code>-- Count turns per session and their average duration, using the unified view
+SELECT trace_metadata:['mlflow.trace.session']::STRING AS session_id,
+       COUNT(*) AS turns,
+       ROUND(AVG(execution_duration_ms)) AS avg_duration_ms
+FROM {catalog}.{schema}.prod_tracing_trace_unified
+WHERE trace_metadata:['mlflow.trace.session'] IS NOT NULL
+GROUP BY 1</code></pre>
+      </div>
+
+      <div class="crosswalk">
+        <div class="side">
+          <h4>CCAR-P crosswalk</h4>
+          <ul>
+            <li><strong>D3 — observability at scale</strong> (named weak spot): trace metadata vs. span attributes is precisely the kind of "two mechanisms, easy to conflate, only one works for grouping" distinction a D3 scenario question is built to test.</li>
+            <li><strong>D4 (evaluation/testing/optimization)</strong> — span_type as the contract a downstream scorer depends on (RetrievalGroundedness needing a RETRIEVER span to exist at all) is the clean example of instrumentation choices determining what evaluation is even possible later.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout work">
+        <div class="label">Advana / FM link</div>
+        <p>Session-level grouping is the mechanism an FM Insight multi-turn interaction — an analyst going back and forth with the agent while reconciling a Fund Balance with Treasury discrepancy, say — needs in order to be reviewable as one episode rather than a pile of disconnected single-turn traces. And the SQL-queryable trace-metadata view is a direct, no-extra-build answer to the kind of AI/BI dashboard a program office would want over agent activity: which users, which sessions, how long, with what assessments, all queryable the same way any other governed table is.</p>
+        <p>会话级分组正是 FM Insight 多轮交互所需要的机制——比如一个分析员在核对一笔 Fund Balance with Treasury 差异的时候，跟 agent 来回对话好几轮——这样才能把它当作一个完整的事件来复盘，而不是一堆互相不相关的单轮 trace。而这个可以用 SQL 查的 trace 元数据视图，对于项目办公室想要的那种关于 agent 活动的 AI/BI 仪表盘来说，是一个不需要额外开发的直接答案：哪些用户、哪些会话、用了多久、评估结果是什么，全都能像查任何其他受治理的表一样查出来。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-file33">
+      <h2><span class="num">File 33</span> Lecture — Production Evaluation and Monitoring</h2>
+      <div class="tag">Duration: 30 minutes · Folder 3's scorer material, re-framed for continuous production monitoring</div>
+
+      <div class="pair">
+        <p>In MLflow, a <strong>scorer</strong> is the evaluation function; a <strong>judge</strong> is a scorer that uses an LLM to evaluate subjective or nuanced criteria. Judges must be wrapped in scorers to run in the evaluation harness or production monitoring — the same vocabulary Folder 3 used for offline evaluation, now applied continuously to live traffic.</p>
+        <p class="cn">在 MLflow 里，<strong>scorer</strong>是评测函数；<strong>judge</strong>是用 LLM 来评测主观或微妙标准的一种 scorer。Judge 必须被包进 scorer 里，才能跑在评测框架或生产监控里——跟 Folder 3 讲离线评测时用的是同一套词汇，现在只是持续套用在真实流量上。</p>
+      </div>
+
+      <h3 class="sub" id="f33-a"><span class="num">A</span> Scorer Types</h3>
+      <div class="tablewrap">
+        <table>
+          <caption>Four scorer types, and the two-step register/start pattern common to all</caption>
+          <thead><tr><th>Type</th><th>What it is</th><th>Ground truth?</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Built-in LLM judges</td><td>Ready-to-use: <code>Safety</code>, <code>RelevanceToQuery</code>, <code>Correctness</code>, <code>RetrievalRelevance</code>, <code>RetrievalGroundedness</code>, <code>RetrievalSufficiency</code>, <code>ToolCallEfficiency</code>, <code>ToolCallCorrectness</code></td><td>Varies — <code>Correctness</code> and <code>RetrievalSufficiency</code> need it, most don't</td></tr>
+            <tr><td class="term">Guidelines judges</td><td>Pass/fail against plain-English rules you write (<code>Guidelines</code>, or <code>ExpectationsGuidelines</code> for per-row ground-truth rules)</td><td>Only the <code>ExpectationsGuidelines</code> variant</td></tr>
+            <tr><td class="term">Custom prompt judges</td><td><code>make_judge()</code>: full control over the prompt template and multi-level quality scales via <code>feedback_value_type</code></td><td>Optional</td></tr>
+            <tr><td class="term">Custom function scorers</td><td><code>@scorer</code> decorator on any self-contained Python function — regex, schema checks, business rules</td><td>N/A — arbitrary code</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="codeblock">
+        <pre><code># The two-step pattern every built-in judge follows
+from mlflow.genai.scorers import Safety, ScorerSamplingConfig
+
+safety_judge = Safety(model="databricks:/dbacademy.agent_deployment.judge-model").register(name="my_safety_judge")
+safety_judge = safety_judge.start(sampling_config=ScorerSamplingConfig(sample_rate=1.0))</code></pre>
+      </div>
+      <div class="pair">
+        <p>Custom function scorers run remotely and must be fully self-contained: every <code>import</code> inside the function body, defined in a Databricks notebook, no class-based <code>Scorer</code> subclasses, no references to variables or modules outside the function, no type hints requiring imports. <code>@scorer(aggregations=["mean", "min", "max"])</code> gets experiment-level summary statistics for numeric scorers.</p>
+        <p class="cn">自定义函数 scorer 是远程运行的，所以必须完全自包含：所有<code>import</code>都要写在函数体内部，必须在 Databricks notebook 里定义，不能用基于类的<code>Scorer</code>子类，不能引用函数外部的变量或模块，类型提示也不能需要额外 import。给数值型 scorer 加上<code>@scorer(aggregations=["mean", "min", "max"])</code>，就能拿到 experiment 级别的汇总统计。</p>
+      </div>
+
+      <h3 class="sub" id="f33-b"><span class="num">B</span> Multi-Turn Judges <span style="font-weight:400;color:var(--muted);font-size:13px">(Experimental)</span></h3>
+      <div class="pair">
+        <p>Multi-turn judges evaluate entire conversations (sessions grouped via the <code>mlflow.trace.session</code> metadata from File 32 D1), attaching assessments to the first trace in the session. A single-turn safety check can pass every individual response while missing that a user repeated the same question four times — only a conversation-level judge catches that pattern.</p>
+        <p class="cn">多轮判官评测的是整段对话（通过 File 32 D1 讲的<code>mlflow.trace.session</code>元数据分好组的会话），评估结果挂在该会话的第一条 trace 上。单轮的安全检查可能让每一个单独的回答都通过，却完全漏掉"用户把同一个问题重复问了四次"这种情况——只有会话级别的判官才能抓到这种模式。</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>The seven built-in multi-turn judges</caption>
+          <thead><tr><th>Judge</th><th>What it evaluates</th></tr></thead>
+          <tbody>
+            <tr><td class="term">ConversationCompleteness</td><td>Whether the agent fully resolved the request across all turns</td></tr>
+            <tr><td class="term">UserFrustration</td><td>Repeated questions, escalation language, confusion signals</td></tr>
+            <tr><td class="term">ConversationalSafety</td><td>Safety violations emerging only across multiple turns</td></tr>
+            <tr><td class="term">KnowledgeRetention</td><td>Whether the agent correctly retains earlier information</td></tr>
+            <tr><td class="term">ConversationalGuidelines</td><td>Compliance with provided guidelines throughout</td></tr>
+            <tr><td class="term">ConversationalRoleAdherence</td><td>Whether the agent maintains its assigned role throughout</td></tr>
+            <tr><td class="term">ConversationalToolCallEfficiency</td><td>Whether tool usage across the conversation was efficient</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub" id="f33-c"><span class="num">C</span> Online Evaluation <span style="font-weight:400;color:var(--muted);font-size:13px">(Beta)</span></h3>
+      <div class="pair">
+        <p>Production monitoring runs as a background job, separate from your notebook process. When traces are UC-backed, that job reads them through a SQL warehouse set on the experiment via the <code>mlflow.monitoring.sqlWarehouseId</code> tag — set with <code>set_databricks_monitoring_sql_warehouse_id()</code>, <strong>before</strong> registering any scorer, or the job fails. Setting <code>MLFLOW_TRACING_SQL_WAREHOUSE_ID</code> is not a substitute — it only applies to the process that set it, not the separately-running job.</p>
+        <p class="cn">生产监控跑在一个后台任务里，跟你 notebook 的进程是分开的。当 trace 存在 UC 里时，这个任务是通过设在 experiment 上的<code>mlflow.monitoring.sqlWarehouseId</code>标签、经由一个 SQL warehouse 来读取数据的——用<code>set_databricks_monitoring_sql_warehouse_id()</code>设置，而且必须在注册任何 scorer<strong>之前</strong>设好，不然这个任务就会失败。设置<code>MLFLOW_TRACING_SQL_WAREHOUSE_ID</code>不能替代它——那只对设置它的那个进程有效，不影响单独运行的那个后台任务。</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>Sampling strategy tiers (File 33, C1) — balancing coverage, signal, and cost</caption>
+          <thead><tr><th>Tier</th><th>Rate</th><th>Reasoning</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Critical</td><td>100%</td><td>Safety/security scorers — the cost of missing a violation far outweighs evaluation cost</td></tr>
+            <tr><td class="term">Expensive</td><td>5-20%</td><td>LLM judges that make their own model calls; 5% still gives statistically meaningful signal at scale</td></tr>
+            <tr><td class="term">Development</td><td>30-50%</td><td>While tuning the agent or judge — higher for fast feedback, dial back once signal is stable</td></tr>
+            <tr><td class="term">Custom</td><td>Variable</td><td>Lightweight function scorers can run at higher rates</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 640 170" role="img" aria-label="The scorer lifecycle: register binds the scorer to an experiment, start activates it with a sampling rate, update changes the sampling rate of an active scorer and returns a new instance, stop pauses it while preserving history, and delete permanently removes it. All transitions return a new immutable object that must be reassigned.">
+          <defs>
+            <marker id="arrH4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+          <rect x="10" y="20" width="118" height="60" rx="8" class="dg-box"/>
+          <text x="69" y="46" text-anchor="middle" class="dg-txt-mono" font-size="11" font-weight="700">register</text>
+          <text x="69" y="64" text-anchor="middle" class="dg-txt-muted" font-size="9">bind to experiment</text>
+          <path d="M128 50 L158 50" class="dg-line" stroke-width="1.6" marker-end="url(#arrH4)"/>
+
+          <rect x="158" y="20" width="118" height="60" rx="8" class="dg-box-hi"/>
+          <text x="217" y="46" text-anchor="middle" class="dg-txt-mono" font-size="11" font-weight="700">start</text>
+          <text x="217" y="64" text-anchor="middle" class="dg-txt-muted" font-size="9">evaluate at sample_rate</text>
+          <path d="M276 50 L306 50" class="dg-line" stroke-width="1.6" marker-end="url(#arrH4)"/>
+
+          <rect x="306" y="20" width="118" height="60" rx="8" class="dg-box-hi"/>
+          <text x="365" y="46" text-anchor="middle" class="dg-txt-mono" font-size="11" font-weight="700">update</text>
+          <text x="365" y="64" text-anchor="middle" class="dg-txt-muted" font-size="9">change sample_rate</text>
+          <path d="M365 80 L365 102" class="dg-line" stroke-width="1.6" marker-end="url(#arrH4)"/>
+          <path d="M424 50 L454 50" class="dg-line" stroke-width="1.6" marker-end="url(#arrH4)"/>
+
+          <rect x="306" y="102" width="118" height="54" rx="8" class="dg-box-warn"/>
+          <text x="365" y="126" text-anchor="middle" class="dg-txt-mono" font-size="11" font-weight="700">stop</text>
+          <text x="365" y="142" text-anchor="middle" class="dg-txt-muted" font-size="9">pauses; history kept</text>
+          <path d="M365 102 Q365 85 306 50" fill="none" class="dg-line" stroke-width="1.4" marker-end="url(#arrH4)"/>
+          <path d="M424 130 L504 130" class="dg-line" stroke-width="1.6" marker-end="url(#arrH4)"/>
+
+          <rect x="454" y="20" width="166" height="60" rx="8" class="dg-box"/>
+          <text x="537" y="46" text-anchor="middle" class="dg-txt-mono" font-size="11" font-weight="700">delete_scorer()</text>
+          <text x="537" y="64" text-anchor="middle" class="dg-txt-muted" font-size="9">permanent, from any state</text>
+          <rect x="504" y="104" width="116" height="50" rx="8" class="dg-box-warn"/>
+          <text x="562" y="134" text-anchor="middle" class="dg-txt-muted" font-size="9.5">(stopped can be deleted too)</text>
+        </svg>
+        <figcaption>Scorer lifecycle: register → start → update/stop → delete. Every transition returns a new immutable instance (always reassign: scorer = scorer.start(...)); stop pauses and preserves history, delete is permanent but also preserves historical assessments already written to traces.</figcaption>
+      </figure>
+      <div class="pair">
+        <p>Maximum 20 scorers per experiment. The <strong>immutability pattern</strong> matters in practice: every lifecycle method returns a new instance, so calling <code>scorer.stop()</code> without reassigning leaves the local variable pointing at the old, still-running state.</p>
+        <p class="cn">每个 experiment 最多 20 个 scorer。<strong>不可变模式</strong>在实际用起来很关键：每个生命周期方法都会返回一个新实例，所以如果调用了<code>scorer.stop()</code>却没有重新赋值，本地变量指向的还是旧的、仍在运行的那个状态。</p>
+      </div>
+
+      <h3 class="sub" id="f33-d"><span class="num">D</span> Scorer Management</h3>
+      <div class="pair">
+        <p><code>get_scorer(name=...)</code> retrieves any registered scorer by name — essential for managing a scorer created in a different notebook session or through the UI, since it works identically for UI-created and API-created scorers. <strong>Stopping</strong> pauses a running scorer (restartable, history preserved); the background job keeps running until all scorers in the experiment are stopped. <strong>Deleting</strong> permanently removes it (running or stopped); historical assessments remain on their traces either way.</p>
+        <p class="cn"><code>get_scorer(name=...)</code>可以按名字取回任何已注册的 scorer——这对管理一个在别的 notebook session 里或通过 UI 创建的 scorer 很关键，因为它对 UI 创建的和 API 创建的 scorer 处理方式完全一样。<strong>停止</strong>会暂停一个正在运行的 scorer（可以重新启动，历史记录保留）；只要 experiment 里还有一个 scorer 没停，后台任务就会一直跑着。<strong>删除</strong>永久移除它（不管正在跑还是已停止）；两种情况下，历史评估结果都会留在对应的 trace 上。</p>
+      </div>
+
+      <h3 class="sub" id="f33-e"><span class="num">E</span> Backfill and Trace Storage</h3>
+      <div class="pair">
+        <p><strong>Metric backfill</strong> (<code>backfill_scorers</code>, from <code>databricks.agents.scorers</code>) retroactively applies scorers to traces logged <em>before</em> the scorer existed — a one-shot job, distinct from the ongoing scheduled job <code>.start()</code> creates. Scorers must already be registered and started. Pass name strings to use registered sample rates, or <code>BackfillScorerConfig</code> objects for custom rates and an explicit <code>start_time</code>/<code>end_time</code> — with neither, backfill covers only the last seven days.</p>
+        <p class="cn"><strong>指标回填</strong>（<code>backfill_scorers</code>，来自<code>databricks.agents.scorers</code>）把 scorer 追溯性地套用到这个 scorer 存在<em>之前</em>就已经记录下来的 trace 上——这是一次性的任务，跟<code>.start()</code>创建的那个持续运行的定时任务不一样。Scorer 必须已经注册并启动过。可以传字符串名字来用已注册的采样率，也可以传<code>BackfillScorerConfig</code>对象来自定义采样率，并显式指定<code>start_time</code>/<code>end_time</code>——两个都不传的话，回填只会覆盖最近七天。</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <caption>Traces in Unity Catalog vs. the experiment's own store (File 33, E2)</caption>
+          <thead><tr><th></th><th>Traces in Unity Catalog</th><th>Traces in the experiment</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Storage limit</td><td>Unlimited</td><td>100,000 traces per experiment</td></tr>
+            <tr><td class="term">Query options</td><td>MLflow UI/SDK, plus SQL, AI/BI dashboards, Genie Code, Spark</td><td>MLflow UI and SDK only</td></tr>
+            <tr><td class="term">Governance</td><td>Unity Catalog schema/table permissions</td><td>Experiment permissions</td></tr>
+            <tr><td class="term">Format</td><td>OpenTelemetry — readable by other OTel tools</td><td>MLflow only</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="crosswalk">
+        <div class="side">
+          <h4>CCAR-P crosswalk</h4>
+          <ul>
+            <li><strong>D4 (evaluation/testing/optimization) — eval dataset/framework design</strong> (named weak spot): the four-scorer-type taxonomy, plus the sampling-tier table, is the single clearest statement in the whole course of "which evaluation tool fits which cost/risk tradeoff," which is exactly the judgment D4 tests.</li>
+            <li><strong>D5 (governance/safety/risk) — LLM risk/failure modes</strong> (named weak spot): "a single-turn safety check can pass every response while missing a four-times-repeated question" is a precise, nameable failure mode an exam scenario would test recognition of.</li>
+            <li><strong>D6 (stakeholder comm &amp; lifecycle)</strong>: the register/start/update/stop/delete lifecycle, with its immutability-pattern gotcha, is lifecycle-management material in the literal sense D6 names.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout work">
+        <div class="label">Advana / FM link</div>
+        <p>The sampling-tier logic maps directly onto an FM Insight production monitoring plan: a GFEBS/Navy ERP balance-accuracy judge is "Critical" (100%, matching how the course treats Safety), while an expensive multi-turn completeness judge over a KSD-drafting conversation could run at the "Expensive" 5-20% tier — the same cost/coverage tradeoff, applied to audit-relevant correctness instead of generic safety. And backfill is the concrete mechanism for a scenario Peter will face in practice: FM Insight ships with a narrower set of scorers at first, and six months later the team wants to retroactively score every historical GFEBS query trace against a newly-written guideline judge, without rerunning a single real query against the production system.</p>
+        <p>采样分级这套逻辑，可以直接套用到 FM Insight 的生产监控计划上：一个判断 GFEBS/Navy ERP 余额准确性的判官属于"关键"级（100%，跟课程对待 Safety 的方式一样），而一个评测 KSD 撰写对话完整性的昂贵多轮判官，可以跑在"昂贵"那一档（5-20%）——同样的成本/覆盖权衡，只是用在审计相关的正确性上，而不是通用的安全性上。而回填正是 Peter 实际工作中会碰到的那种场景的具体解法：FM Insight 一开始只上线一小部分 scorer，六个月之后团队想把所有历史 GFEBS 查询 trace，都拿去对照一个新写的准则判官重新打分一遍，而且完全不用在生产系统上把任何一条真实查询重跑一次。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-file34">
+      <h2><span class="num">File 34</span> Lab — Online Evaluation with Multi-Turn Conversations</h2>
+      <div class="tag">Duration: 45 minutes · the hands-on version of File 33's online-evaluation material</div>
+      <div class="pair">
+        <p>Scenario: Peter is the ML engineer for a production travel agent whose users report incomplete answers and conversations that take too many turns. The lab's build→verify structure walks through deploying three multi-turn judges in code (<code>ConversationCompleteness</code> at 0.5, <code>UserFrustration</code> at 0.5, <code>ConversationalSafety</code> at 1.0, all registered against the course judge model), adding a fourth judge entirely through the UI (<code>ConversationalGuidelines</code> named <code>professional</code>, with the single guideline "The interaction must be professional"), and a fifth scorer as custom code (a <code>response_length</code> function scorer with <code>mean</code>/<code>min</code>/<code>max</code> aggregations, handling the possibility that UC-stored traces hand <code>outputs</code> back as JSON text rather than a dict).</p>
+        <p class="cn">场景：Peter 是一个生产级旅行助手 agent 的 ML 工程师，用户反馈回答不完整、对话要反复好几轮才能解决问题。实验按"搭建→验证"的结构，先用代码部署三个多轮判官（<code>ConversationCompleteness</code>采样率 0.5，<code>UserFrustration</code>采样率 0.5，<code>ConversationalSafety</code>采样率 1.0，全部挂在课程的判官模型上），再完全通过 UI 加上第四个判官（<code>ConversationalGuidelines</code>，取名<code>professional</code>，只有一条准则："这次互动必须保持专业"），最后再加上第五个 scorer，是一段自定义代码（一个带<code>mean</code>/<code>min</code>/<code>max</code>汇总的<code>response_length</code>函数 scorer，还要处理 UC 存储的 trace 可能把<code>outputs</code>以 JSON 文本而不是 dict 形式传回来的情况）。</p>
+      </div>
+      <div class="pair">
+        <p>The critical first step, easy to get backwards, is <strong>A1: set the monitoring SQL warehouse on the experiment before registering any scorer</strong> — <code>set_databricks_monitoring_sql_warehouse_id(sql_warehouse_id=...)</code>, writing the <code>mlflow.monitoring.sqlWarehouseId</code> tag the separately-running job reads. Skip it and every scorer registration later fails. After all five scorers are live, the Trace Metrics Computation Job (named <code>[experiment_id] Trace Metrics Computation Job</code> in Jobs &amp; Pipelines, running on a fixed ~15-minute schedule) evaluates them together; <code>list_scorers()</code> is how you confirm all five show as active and at what rate; <code>get_scorer()</code> + <code>.update(sampling_config=...)</code> tunes a rate afterward; and cleanup is the full lifecycle in reverse — <code>.stop()</code> each (fetching the UI-created <code>professional</code> judge with <code>get_scorer()</code> since there's no local variable for it), then <code>delete_scorer()</code> on every name from <code>list_scorers()</code>, verifying the list comes back empty.</p>
+        <p class="cn">最关键、也最容易搞反顺序的第一步，是<strong>A1：在注册任何 scorer 之前，先给 experiment 设好监控用的 SQL warehouse</strong>——<code>set_databricks_monitoring_sql_warehouse_id(sql_warehouse_id=...)</code>，写下的是那个单独运行的任务要读的<code>mlflow.monitoring.sqlWarehouseId</code>标签。跳过这一步，后面每一次注册 scorer 都会失败。五个 scorer 都上线之后，Trace Metrics Computation Job（在 Jobs & Pipelines 里叫<code>[experiment_id] Trace Metrics Computation Job</code>，按固定的约 15 分钟一次的计划跑）会把它们放在一起评测；<code>list_scorers()</code>用来确认五个全都显示为活跃状态、各自的采样率是多少；<code>get_scorer()</code>配合<code>.update(sampling_config=...)</code>可以事后调采样率；清理工作就是把整个生命周期反着走一遍——先对每一个调用<code>.stop()</code>（那个通过 UI 创建的<code>professional</code>判官没有本地变量，要先用<code>get_scorer()</code>取回来），再对<code>list_scorers()</code>里的每个名字调用<code>delete_scorer()</code>，最后确认列表真的是空的。</p>
+      </div>
+      <div class="callout">
+        <div class="label">Default conversation timing, again</div>
+        <p>Multi-turn judges run only after a conversation is considered complete — by default, 5 minutes of inactivity on that session ID. The lab's setup script needs to have run at least 5 minutes before the job runs, or sessions will look incomplete and judges won't fire.</p>
+      </div>
+      <div class="crosswalk">
+        <div class="side">
+          <h4>CCAR-P crosswalk</h4>
+          <ul>
+            <li><strong>D6 (stakeholder comm &amp; lifecycle)</strong>: three deployment paths for the same evaluation capability — code, UI, custom function — landing on one experiment and one job run, is a direct illustration of "lifecycle management doesn't require one uniform tool," which is the kind of nuance D6 questions reward.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout work">
+        <div class="label">Advana / FM link</div>
+        <p>The mixed code/UI/custom-scorer deployment pattern matters for FM Insight's actual team shape: a data scientist can register judges in code, a less-technical SME reviewer can add a guideline judge entirely through the UI with no Python, and a third team member can ship a one-off business-rule scorer — all three landing on the same experiment, evaluated by the same job, with no coordination overhead beyond the shared SQL-warehouse-first setup step.</p>
+        <p>这种混合了代码、UI、自定义 scorer 的部署方式，对 FM Insight 实际的团队构成很有意义：数据科学家可以用代码注册判官，一个技术背景不那么深的 SME 评审员完全可以通过 UI 加一个准则判官而不用写一行 Python，第三个团队成员也可以上线一个一次性的业务规则 scorer——三者都落在同一个 experiment 里，被同一个任务评测，彼此之间不需要额外协调，唯一的前提就是那个共享的、必须先做好的 SQL warehouse 设置步骤。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-file35">
+      <h2><span class="num">File 35</span> Lab — Backfilling and Querying Multi-Turn Conversations</h2>
+      <div class="tag">Duration: 35 minutes · the hands-on version of File 33's backfill and UC-storage material</div>
+      <div class="pair">
+        <p>The setup script pre-creates a UC-backed experiment with 3 multi-turn sessions (9 traces: a Japan trip-planning session with thorough answers as the baseline, a flight-booking session with vague incomplete answers, and a hotel-cancellation session where the agent ignores the request entirely) and a deployed <code>ConversationCompleteness</code> judge at 70% sampling. Peter's job is to inspect that setup in the UI, run the already-created Trace Metrics Computation Job once manually, confirm Session 1 passes while Sessions 2-3 get flagged, then add a new <code>Safety</code> scorer and <strong>backfill</strong> it onto the 9 existing traces — because <code>.start()</code> only evaluates <em>new incoming</em> traces, and these nine already exist.</p>
+        <p class="cn">Setup 脚本预先建好一个绑定了 UC 的 experiment，带 3 个多轮会话（9 条 trace：一个日本行程规划会话，回答详尽，作为基准；一个订机票会话，回答含糊不清、不完整；一个取消酒店预订会话，agent 完全不理这个请求）,还部署了一个采样率 70% 的<code>ConversationCompleteness</code>判官。Peter 的任务是在 UI 里检查这套设置，手动运行一次已经创建好的 Trace Metrics Computation Job，确认 Session 1 通过、Session 2-3 被标记出来，然后再加一个新的<code>Safety</code> scorer，把它<strong>回填</strong>到已有的这 9 条 trace 上——因为<code>.start()</code>只评测<em>新进来</em>的 trace，而这九条早就存在了。</p>
+      </div>
+      <div class="codeblock">
+        <pre><code>from mlflow.genai.scorers import Safety, ScorerSamplingConfig
+from databricks.agents.scorers import backfill_scorers, BackfillScorerConfig
+
+safety = Safety(model=judge_model).register(name="safety_check")
+safety = safety.start(sampling_config=ScorerSamplingConfig(sample_rate=1.0))
+
+job_id = backfill_scorers(scorers=[BackfillScorerConfig(scorer=safety, sample_rate=1.0)])
+print(f"Backfill job ID: {job_id}")</code></pre>
+      </div>
+      <div class="pair">
+        <p>Two distinct background jobs are created across the two labs — a <strong>Trace Metrics Computation Job</strong> (ongoing, scheduled, evaluates new incoming traces) and a <strong>Metric Backfill Computation Job</strong> (one-shot, evaluates historical traces once). After the backfill completes, <code>mlflow.search_traces()</code> confirms assessments landed; the real payoff is a single SQL query over the <code>&lt;prefix&gt;_trace_metadata</code> view that lists every session's user, assessment name, and value in one shot by exploding the <code>assessments</code> array and filtering out scorer errors — the exact kind of query an AI/BI dashboard would run, and one the lab notes works with no copying or syncing because the UC tables are the trace store, not a copy of it.</p>
+        <p class="cn">两个实验里一共创建了两种不同的后台任务——一个<strong>Trace Metrics Computation Job</strong>（持续运行、按计划触发，评测新进来的 trace）和一个<strong>Metric Backfill Computation Job</strong>（一次性的，把历史 trace 评测一遍就结束）。回填完成之后，用<code>mlflow.search_traces()</code>确认评估结果真的落地了；真正有用的是那一条对<code>&lt;prefix&gt;_trace_metadata</code>视图跑的 SQL 查询，把<code>assessments</code>数组展开、过滤掉 scorer 报错的那些，一次性列出每个会话的用户、评估名字和结果——这正是一个 AI/BI 仪表盘会跑的那种查询，而且实验特别指出，这里不需要任何复制或同步，因为 UC 里的表本身就是 trace 的存储地，不是存储地的一份拷贝。</p>
+      </div>
+      <div class="codeblock">
+        <pre><code>SELECT trace_metadata:['mlflow.trace.session']::STRING AS session_id,
+       trace_metadata:['mlflow.trace.user']::STRING AS user_id,
+       a.assessment_name,
+       a.feedback.value AS value
+FROM {catalog}.{schema}.backfill_traces_trace_metadata
+LATERAL VIEW explode(assessments) t AS a
+WHERE a.feedback.error IS NULL
+ORDER BY user_id, a.assessment_name</code></pre>
+      </div>
+      <div class="crosswalk">
+        <div class="side">
+          <h4>CCAR-P crosswalk</h4>
+          <ul>
+            <li><strong>D4 (evaluation/testing/optimization) — A/B testing / eval design</strong> (named weak spot area): scheduled job vs. backfill job is a clean conceptual pair — ongoing vs. one-shot, forward-looking vs. retroactive — worth holding as a fixed distinction rather than two instances of "a job that scores things."</li>
+            <li><strong>D3 (integration) — observability at scale</strong>: the trace-table permission model (SELECT + MODIFY as ordinary Unity Catalog grants, lineage and auditing included for free) is the governance answer to "how do traces fit into an existing UC-governed data estate," not a bolt-on exception.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout work">
+        <div class="label">Advana / FM link</div>
+        <p>Backfill is the realistic rollout path for FM Insight's own scorer coverage: ship a narrow first judge, accumulate months of GFEBS/Navy ERP agent traces in production, and only later — once a specific audit-remediation finding sharpens exactly what "correct" means for a given query type — write the guideline judge that captures it and apply it retroactively to everything already logged, rather than needing perfect foresight on day one. The UC table permission model (table-by-table SELECT + MODIFY) also directly answers how FM Insight's own trace tables should sit inside Advana's existing Unity Catalog governance once that rollout is further along there.</p>
+        <p>回填正是 FM Insight 自己 scorer 覆盖面的现实推进路径：先上线一个范围很窄的判官，让 GFEBS/Navy ERP 的 agent trace 在生产环境里积累上几个月，等到某个具体的审计整改发现，把某种查询类型的"正确"到底是什么意思说清楚了，再去写一个能捕捉到这一点的准则判官，并把它追溯性地套用到已经记录下来的所有数据上——而不需要在第一天就有完美的预见能力。UC 表权限模型（逐表授予 SELECT + MODIFY）也直接回答了，等 Advana 那边的 Unity Catalog 治理进一步落地之后，FM Insight 自己的 trace 表该怎么放进那套既有治理体系里。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-file36">
+      <h2><span class="num">File 36</span> Lecture (Appendix, optional) — Agent Bricks CLI</h2>
+      <div class="tag">Duration: 30 minutes · a newer, more automated alternative to the Apps+DABs path this whole folder otherwise used; Beta</div>
+      <div class="pair">
+        <p>The Agent Bricks CLI (<code>databricks-agentbricks</code>) splits agent-building into two parts: you write application logic (model choice, prompts, custom Python tools), and the CLI manages Databricks resources (model access, managed memory, managed sessions, managed tools declared in <code>agent.toml</code>, MLflow tracing on by default, deployment and permissions). It is a code-first alternative to the Apps+DABs pattern Files 29-30 built by hand, not a replacement for the tracing, scorer, and evaluation material in Files 31-35 — a CLI-deployed agent's traces land in a standard MLflow experiment, so every technique in this folder still applies.</p>
+        <p class="cn">Agent Bricks CLI（<code>databricks-agentbricks</code>）把建 agent 这件事拆成了两部分：你写应用逻辑（选模型、写 prompt、自定义 Python 工具），CLI 负责管理 Databricks 资源（模型访问权限、托管的 memory、托管的 session、在<code>agent.toml</code>里声明的托管工具、默认开启的 MLflow tracing、部署和权限）。这是一种代码优先的替代方案，对标的是 File 29-30 手动搭出来的 Apps+DABs 那套模式，而不是取代 File 31-35 讲的 tracing、scorer、评测那套东西——用 CLI 部署的 agent 产生的 trace，照样落在一个标准的 MLflow experiment 里，所以这个 Folder 里讲的每一种技巧，照样全都适用。</p>
+      </div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 640 150" role="img" aria-label="The Agent Bricks CLI three-command lifecycle: agentbricks init scaffolds a project from a framework template and writes agent.toml, agentbricks dev runs the agent locally on port 8000, and agentbricks deploy provisions the resources in agent.toml and rolls out to the agent runtime.">
+          <defs>
+            <marker id="arrH5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+          <rect x="10" y="20" width="190" height="96" rx="9" class="dg-box-hi"/>
+          <text x="105" y="46" text-anchor="middle" class="dg-txt" font-size="11.5" font-weight="700">1. SCAFFOLD</text>
+          <text x="105" y="66" text-anchor="middle" class="dg-txt-mono" font-size="10.5">agentbricks init</text>
+          <text x="105" y="84" text-anchor="middle" class="dg-txt-muted" font-size="9">template + agent.toml</text>
+          <path d="M200 68 L232 68" class="dg-line" stroke-width="1.6" marker-end="url(#arrH5)"/>
+
+          <rect x="232" y="20" width="190" height="96" rx="9" class="dg-box"/>
+          <text x="327" y="46" text-anchor="middle" class="dg-txt" font-size="11.5" font-weight="700">2. RUN LOCALLY</text>
+          <text x="327" y="66" text-anchor="middle" class="dg-txt-mono" font-size="10.5">agentbricks dev</text>
+          <text x="327" y="84" text-anchor="middle" class="dg-txt-muted" font-size="9">port 8000, same runtime</text>
+          <path d="M422 68 L454 68" class="dg-line" stroke-width="1.6" marker-end="url(#arrH5)"/>
+
+          <rect x="454" y="20" width="176" height="96" rx="9" class="dg-box"/>
+          <text x="542" y="46" text-anchor="middle" class="dg-txt" font-size="11.5" font-weight="700">3. DEPLOY</text>
+          <text x="542" y="66" text-anchor="middle" class="dg-txt-mono" font-size="10.5">agentbricks deploy</text>
+          <text x="542" y="84" text-anchor="middle" class="dg-txt-muted" font-size="9">provisions agent.toml</text>
+        </svg>
+        <figcaption>The three-command Agent Bricks CLI lifecycle. agent.toml is the declarative source of truth: CLI subcommands (tools add, memory bind, sessions bind, tracing bind) write to it, and agentbricks deploy reads it to provision everything.</figcaption>
+      </figure>
+
+      <div class="tablewrap">
+        <table>
+          <caption>Agent Bricks CLI vs. Apps + DABs (File 36, E)</caption>
+          <thead><tr><th></th><th>Apps + DABs (Files 29-30)</th><th>Agent Bricks CLI</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Resource wiring</td><td>Declared in <code>databricks.yml</code></td><td>Declared in <code>agent.toml</code></td></tr>
+            <tr><td class="term">Deploy</td><td><code>databricks bundle deploy</code>, then <code>databricks apps deploy</code></td><td><code>agentbricks deploy</code></td></tr>
+            <tr><td class="term">MCP tools</td><td>Connected in agent code with <code>McpServer</code></td><td><code>agentbricks tools add mcp &lt;service&gt;</code>, connected at runtime</td></tr>
+            <tr><td class="term">Tracing</td><td>Added with autologging + <code>@mlflow.trace</code></td><td>On by default, per-project MLflow experiment</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pair">
+        <p>For an agent already built with LangGraph or the OpenAI Agents SDK, <code>agentbricks init --framework &lt;fw&gt; --existing .</code> does not rewrite code itself — it writes an <code>agent-bricks-migrate/</code> directory with migration instructions for a coding agent (Claude Code, Codex) to follow, which then converts the project to <code>agent.toml</code> plus a <code>DurableAgentServer</code> entrypoint; <code>agentbricks doctor .</code> checks the conversion without running code or contacting Databricks. Switching to a managed session store does not carry over existing conversation history — a real decision point to make explicitly before migrating, not something the tooling resolves for you.</p>
+        <p class="cn">对于一个已经用 LangGraph 或 OpenAI Agents SDK 搭好的 agent，<code>agentbricks init --framework &lt;fw&gt; --existing .</code>本身不会去改写代码——它会写出一个<code>agent-bricks-migrate/</code>目录，里面是给编码 agent（Claude Code、Codex）跟着做的迁移说明，后者会把项目转换成<code>agent.toml</code>加一个<code>DurableAgentServer</code>入口；<code>agentbricks doctor .</code>在不运行代码、不联系 Databricks 的前提下检查这次转换做得对不对。切换到托管的 session store，不会把已有的对话历史一起带过去——这是迁移之前需要明确做出的一个真实决策点，工具不会替你解决。</p>
+      </div>
+
+      <div class="crosswalk">
+        <div class="side">
+          <h4>CCAR-P crosswalk</h4>
+          <ul>
+            <li><strong>D7 (dev productivity &amp; ops enablement)</strong> — Agent Bricks CLI is the clearest D7 material in the entire course: a declarative-source-of-truth tool whose entire purpose is reducing the hand-written infrastructure surface, named explicitly against the DABs alternative it's trying to make faster.</li>
+            <li><strong>D1 (architecture)</strong> — "the CLI is a code-first alternative, not a replacement for the tracing/scorer layer" is a composability judgment worth having crisp for an exam question that tries to frame two tools as mutually exclusive when they're actually orthogonal.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout work">
+        <div class="label">Advana / FM link</div>
+        <p>Because the CLI is Beta and this appendix is explicitly optional, it is not the near-term build path for FM Insight — but the <code>agent.toml</code> declarative-resource pattern is worth tracking as it matures, since "one file, not a hand-wired databricks.yml + app.yaml + agent.py triangle" would meaningfully lower the barrier for the less code-heavy members of Peter's three teams to stand up their own scoped agents inside the FM Insight platform, once the CLI leaves Beta and Advana's environment catches up to supporting it.</p>
+        <p>因为这个 CLI 还在 Beta 阶段，而且这一节本身就被课程明确标注为选读内容，它暂时不是 FM Insight 近期的建设路径——但<code>agent.toml</code>这种声明式资源的模式，随着它逐渐成熟，值得持续关注，因为"一个文件，而不是一个手工搭起来的 databricks.yml + app.yaml + agent.py 三角"，一旦这个 CLI 走出 Beta、Advana 的环境也跟上支持它，就能实实在在地降低 Peter 三个团队里那些代码背景没那么深的成员，在 FM Insight 平台内部搭建自己限定范围 agent 的门槛。</p>
+      </div>
+    </section>
+
+    <section class="block" id="day2-synthesis">
+      <h2><span class="num">·</span> Folder 4 Complete — and the Course's Full Arc, Closed</h2>
+      <div class="pair">
+        <p>Folder 4 closes a loop that opened on Day 1: Folder 1 built retrieval, Folder 2 built tools and multi-agent orchestration, Folder 3 built the vocabulary for judging whether any of it was any good, and Folder 4 is what happens when that whole stack has to survive contact with real users and real traffic. The one idea that ties the entire course together, named explicitly in File 29 and never contradicted since: everything — deployment, tracing, evaluation, monitoring — is designed to be <strong>incremental</strong>. You can deploy before tracing, trace before evaluating, evaluate offline before going online, and backfill a judge you hadn't thought to write yet. Nothing in this architecture demands getting it all right on day one.</p>
+        <p class="cn">Folder 4 把 Day 1 开的一个口子给合上了：Folder 1 搭的是检索，Folder 2 搭的是工具和多 agent 编排，Folder 3 搭的是怎么判断前面这些东西到底做得好不好的那套词汇，而 Folder 4 讲的是，当这整套东西要真的扛住真实用户和真实流量的时候，会发生什么。贯穿整门课的那一个核心想法，在 File 29 里明确点出来、后面从没被打破过：不管是部署、tracing、评测还是监控，整套设计都是<strong>可以一步一步加的</strong>。你可以先部署再加 tracing，先 tracing 再做评测，先离线评测再上线，也可以给一个当初根本没想到要写的判官做回填。这套架构从来没要求你第一天就把什么都做对。</p>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <caption>Folder 4 cheat sheet — capability needed → feature → where in the UI → which file covers it</caption>
+          <thead><tr><th>Capability needed</th><th>Feature</th><th>Where in the Databricks UI</th><th>File</th></tr></thead>
+          <tbody>
+            <tr><td class="term">Ship an agent as a live web app</td><td>Databricks Apps + DABs</td><td>Apps page in the sidebar</td><td>29, 30</td></tr>
+            <tr><td class="term">Govern model calls centrally</td><td>Unity Gateway</td><td>AI/ML &gt; Unity Gateway (model service config)</td><td>29</td></tr>
+            <tr><td class="term">Connect a governed external tool at runtime</td><td>MCP (Databricks-provided, external, or custom)</td><td>Catalog (MCP is a UC object)</td><td>30, 31</td></tr>
+            <tr><td class="term">See what the agent actually did, per request</td><td>MLflow Tracing (autolog + manual spans)</td><td>Experiments &gt; Traces tab</td><td>30, 31, 32</td></tr>
+            <tr><td class="term">Group a multi-turn conversation into one unit</td><td>Session-level trace metadata</td><td>Experiments &gt; Traces &gt; Sessions switcher</td><td>32</td></tr>
+            <tr><td class="term">Query trace history with SQL / dashboards</td><td>UC-backed trace tables + views</td><td>Catalog &gt; your schema &gt; *_trace_unified / *_trace_metadata</td><td>31, 32, 33, 35</td></tr>
+            <tr><td class="term">Continuously score live traffic</td><td>Scorer register/start + sampling tiers</td><td>Experiments &gt; Scorers tab</td><td>33, 34</td></tr>
+            <tr><td class="term">Catch a multi-turn-only failure pattern</td><td>Conversation judges (Completeness, Frustration, Safety, ...)</td><td>Experiments &gt; Sessions view, after a judge is deployed</td><td>33, 34, 35</td></tr>
+            <tr><td class="term">Score traces that predate a scorer</td><td><code>backfill_scorers()</code></td><td>Jobs &amp; Pipelines &gt; Metric Backfill Computation Job</td><td>33, 35</td></tr>
+            <tr><td class="term">Lower the build floor further (Beta)</td><td>Agent Bricks CLI + <code>agent.toml</code></td><td>N/A — local CLI</td><td>36</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout work">
+        <div class="label">Advana / FM link — the full production path for FM Insight</div>
+        <p>Taken together with Day 2 Part 1's phased adoption plan, Folder 4 supplies the missing back half of that plan: Phases 0-1 there were about getting tracing and offline evaluation onto one agent; everything this page covers — Databricks Apps deployment, resource-injected config that survives Advana's lagging feature rollout, Unity Gateway governance, UC-backed trace storage with explicit table grants, and sampling-tiered production scorers starting at Safety=100% — is the concrete, file-by-file answer to what Phases 2 through 5 actually build. The single open question this page does not resolve is Advana's own deployment surface: whether Databricks Apps is available there at all (Day 1's reconnaissance confirmed it is, alongside Lakehouse, but with Unity Catalog and serverless still "in the implementation"), which determines whether File 29-30's pattern can be followed as-is or needs the Model Serving fallback File 29 B3 describes.</p>
+        <p>把这一页跟 Day 2 第一部分那份分阶段采用计划放在一起看，Folder 4 正好补上了那份计划缺的后半段：那边的 Phase 0-1 讲的是怎么把 tracing 和离线评测先用到一个 agent 上；这一页讲的这些东西——Databricks Apps 部署、能扛住 Advana 功能滞后上线的资源注入式配置、Unity Gateway 治理、带明确表级授权的 UC trace 存储、从 Safety=100% 开始的分级采样生产 scorer——正是 Phase 2 到 Phase 5 具体要搭什么的、一个文件接一个文件的答案。这一页留下的唯一一个没解决的开放问题，是 Advana 自己的部署面：Databricks Apps 在那边到底能不能用（Day 1 的侦察已经确认能用，跟 Lakehouse 一起，但 Unity Catalog 和 serverless 还"在实施中"），这决定了 File 29-30 这套模式能不能原样照搬，还是需要退回到 File 29 B3 讲的 Model Serving 方案。</p>
+      </div>
+    </section>
+
+    <footer class="meta">Day 2, Part 2 — complete. Folder 4 "Deploying and Monitoring Agents on Databricks" fully covered: File 29 (Lecture, deployment architecture), File 30 (Demo, three-stage observable agent build), File 31 (Lecture, MCP + tracing foundations), File 32 (Demo, production tracing techniques), File 33 (Lecture, scorer types and online evaluation), File 34-35 (Labs, hands-on online evaluation and backfill), File 36 (Appendix, Agent Bricks CLI). The course's four-folder arc (Day 1 Parts 1-2, Day 2 Parts 1-2) is now closed end to end.<br>第二天 · 第二部分——已完成。Folder 4"Deploying and Monitoring Agents on Databricks"全部覆盖：File 29（讲义，部署架构）、File 30（演示，三阶段可观测 agent 构建）、File 31（讲义，MCP + tracing 基础）、File 32（演示，生产级 tracing 技巧）、File 33（讲义，scorer 类型与线上评测）、File 34-35（实验，线上评测与回填实操）、File 36（附录，Agent Bricks CLI）。整门课四个 Folder 的完整弧线（Day 1 第一、二部分，Day 2 第一、二部分），现在从头到尾全部闭环了。</footer>
+  </main>
+</div>
+
+<script src="/tutor-widget.js" defer></script>
+</body></html>
