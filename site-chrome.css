@@ -42,12 +42,32 @@ body{ padding-top: var(--topbar-h); }
   .ccar-topbar nav a{ font-size:11px; padding:6px 7px; }
 }
 
-/* Actively use right-side space on wide desktop viewports */
+/* --- Layout ---
+   The page's own CSS kept .shell at a fixed 1180px while every piece of
+   content inside it (paragraphs, callouts, diagrams) was independently
+   capped at its own, smaller, mismatched width (68ch for <p>, 720px for
+   figures, etc). That produced misaligned edges between blocks AND, once
+   .shell is given more room on a wide monitor, a large dead gutter on the
+   right that none of the content actually fills.
+   Fix: widen .shell modestly (not edge-to-edge -- the sidebar should stay
+   right next to the content, not float apart), and give every content
+   block inside <main> the SAME width so they all line up and use the
+   space that's actually there. */
 @media (min-width:1000px){
-  .shell{ max-width:min(1680px, 96vw) !important; }
+  .shell{ max-width:1320px !important; }
 }
-@media (min-width:1500px){
-  .shell{ grid-template-columns:260px minmax(0,1fr) !important; }
+
+main{ max-width: 900px !important; }
+main p,
+main p.cn,
+main .callout,
+main .callout p,
+main .callout li,
+main .callout div,
+main figure.diagram,
+main figure.diagram figcaption,
+main header.masthead .lede{
+  max-width: none !important;
 }
 
 /* Keep the sticky sidebar clear of the fixed top bar */
@@ -61,13 +81,7 @@ body{ padding-top: var(--topbar-h); }
 /* Left sidebar hide/unhide */
 body.ccar-nav-hidden nav.rail{ display:none !important; }
 body.ccar-nav-hidden .shell{ grid-template-columns:1fr !important; }
-
-/* Callout/card boxes were capped at ~68ch (prose width) regardless of how
-   wide the content column actually is, leaving a large dead gutter on the
-   right on desktop. Let them use real card width; keep running <p> prose at
-   68ch elsewhere since that's the right width for readability. */
-.callout{ max-width:1100px !important; }
-.callout p, .callout li, .callout div{ max-width:none !important; }
+body.ccar-nav-hidden main{ max-width:1100px !important; }
 
 /* The sidebar's "This page is the hub..." box used the muted/secondary grey,
    which reads as disabled/placeholder text. Use the main body text color. */
