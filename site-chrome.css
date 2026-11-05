@@ -86,3 +86,15 @@ body.ccar-nav-hidden main{ max-width:1100px !important; }
 /* The sidebar's "This page is the hub..." box used the muted/secondary grey,
    which reads as disabled/placeholder text. Use the main body text color. */
 nav.rail .status{ color:var(--fg) !important; }
+
+/* Chinese-language paragraphs (.cn) were styled in the muted/secondary grey
+   as if they were captions, not main content. Use the same primary text
+   color as the English paragraphs. */
+p.cn,
+header.masthead .lede.cn{
+  color: var(--fg) !important;
+}
+
+/* Explicit, generous gap between the sidebar and the content column --
+   don't rely solely on the sidebar's own internal padding for this. */
+.shell{ column-gap: 48px !important; }
